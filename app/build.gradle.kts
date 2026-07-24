@@ -15,7 +15,7 @@ val localProperties = Properties().apply {
 
 android {
     namespace = "com.expensetracker"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.expensetracker"

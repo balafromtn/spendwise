@@ -100,7 +100,7 @@ fun ReportsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        PieChart(data = expenseBreakdown, size = 180)
+                        PieChart(data = expenseBreakdown, size = 180f)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     PieChartLegend(data = expenseBreakdown)

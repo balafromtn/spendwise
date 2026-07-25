@@ -50,6 +50,12 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += "META-INF/**"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -104,7 +110,9 @@ dependencies {
 
     // Google Sheets API
     implementation(libs.google.api.client)
+    implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.sheets)
+    implementation(libs.google.http.client)
     implementation(libs.google.http.gson)
 
     // Coroutines

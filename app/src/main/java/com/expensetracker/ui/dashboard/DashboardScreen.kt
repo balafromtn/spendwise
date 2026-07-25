@@ -101,7 +101,7 @@ fun DashboardScreen(
                             ) {
                                 PieChart(
                                     data = uiState.summary.categoryBreakdown.filter { it.type == "Expense" },
-                                    size = 180
+                                    size = 180f
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))

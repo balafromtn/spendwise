@@ -3,6 +3,7 @@ package com.expensetracker.sync
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -52,7 +53,7 @@ class SyncWorker(
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

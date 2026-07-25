@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
 
@@ -26,16 +27,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SPREADSHEET_ID", "\"${localProperties.getProperty("SPREADSHEET_ID", "")}\"")
-        buildConfigField("String", "WEB_CLIENT_ID", "\"${localProperties.getProperty("WEB_CLIENT_ID", "")}\"")
+        buildConfigField(
+            "String",
+            "SPREADSHEET_ID",
+            "\"${localProperties.getProperty("SPREADSHEET_ID", "")}\""
+        )
 
-buildFeatures {
-    compose = true
-}
-
-composeOptions {
-    kotlinCompilerExtensionVersion = "1.5.15"
-}
+        buildConfigField(
+            "String",
+            "WEB_CLIENT_ID",
+            "\"${localProperties.getProperty("WEB_CLIENT_ID", "")}\""
+        )
     }
 
     buildTypes {
@@ -74,6 +76,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
+
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
@@ -93,12 +96,10 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime.ktx)
 
-    // Google Auth (Credential Manager)
+    // Google Authentication
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
-
-    // Google Sign-In (for OAuth2 token acquisition for Sheets API)
     implementation(libs.play.services.auth)
 
     // Google Sheets API

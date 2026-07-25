@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class AddTransactionUiState(
     val type: String = "Expense",
@@ -27,7 +28,8 @@ data class AddTransactionUiState(
     val isEditing: Boolean = false,
     val editingId: Long = 0,
     val showSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isSaving: Boolean = false
 )
 
 class TransactionViewModel(application: Application) : AndroidViewModel(application) {
@@ -94,18 +96,11 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun loadCategories() {
-        viewModelScope.launch {
-            container.database.categoryDao().getCategoriesByType(_uiState.value.type).collect { cats ->
-                // Categories are observed via StateFlow
-            }
-        }
-    }
-
     fun saveTransaction() {
         val state = _uiState.value
-        val amount = state.amount.toDoubleOrNull()
+        if (state.isSaving) return
 
+        val amount = state.amount.toDoubleOrNull()
         if (amount == null || amount <= 0) {
             _uiState.value = state.copy(error = "Please enter a valid amount")
             return
@@ -115,14 +110,21 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
             return
         }
 
+        _uiState.value = state.copy(isSaving = true)
+
         viewModelScope.launch {
-            val dateParts = state.date.split("-")
             val dateObj = dateUtils.parseSheetDate(state.date)
             val month = dateUtils.toMonthString(dateObj)
             val weekNo = dateUtils.toWeekNumber(dateObj)
 
             val entity = TransactionEntity(
                 id = if (state.isEditing) state.editingId else 0,
+                transactionId = if (state.isEditing) {
+                    val existing = container.database.transactionDao().getById(state.editingId)
+                    existing?.transactionId ?: UUID.randomUUID().toString()
+                } else {
+                    UUID.randomUUID().toString()
+                },
                 date = state.date,
                 time = state.time,
                 type = state.type,
@@ -144,7 +146,8 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
             SyncWorker.enqueueImmediateSync(getApplication())
             _uiState.value = _uiState.value.copy(
                 showSuccess = true,
-                error = null
+                error = null,
+                isSaving = false
             )
         }
     }

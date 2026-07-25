@@ -1,6 +1,7 @@
 package com.expensetracker.ui.auth
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +40,12 @@ fun AuthScreen(
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d("AuthScreen", "Sign-in result: resultCode=${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
             viewModel.handleSignInResult(result.data)
+        } else {
+            Log.w("AuthScreen", "Sign-in cancelled or failed, resultCode=${result.resultCode}")
+            viewModel.setError("Sign-in was cancelled. Please try again.")
         }
     }
 

@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TransactionDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(transaction: TransactionEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(transactions: List<TransactionEntity>)
 
     @Update
@@ -30,8 +30,17 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY createdAt DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT :limit")
+    fun getRecentTransactions(limit: Int = 5): Flow<List<TransactionEntity>>
+
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: Long): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE transactionId = :transactionId LIMIT 1")
+    suspend fun getByTransactionId(transactionId: String): TransactionEntity?
+
+    @Query("SELECT transactionId FROM transactions WHERE syncStatus = 'PENDING'")
+    suspend fun getPendingTransactionIds(): List<String>
 
     @Query("SELECT * FROM transactions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<TransactionEntity>
@@ -44,6 +53,9 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET syncStatus = 'SYNCED' WHERE id = :id")
     suspend fun markSyncedNoRow(id: Long)
+
+    @Query("UPDATE transactions SET syncStatus = 'SYNCED' WHERE transactionId = :transactionId")
+    suspend fun markSyncedByTransactionId(transactionId: String)
 
     @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Income' AND month = :month")
     fun getTotalIncomeByMonth(month: String): Flow<Double?>
@@ -83,6 +95,9 @@ interface TransactionDao {
         category: String?,
         paymentMethod: String?
     ): Flow<List<TransactionEntity>>
+
+    @Query("SELECT AVG(amount) FROM transactions WHERE type = 'Expense' AND weekNo = :weekNo AND month = :month")
+    fun getAverageWeeklySpend(weekNo: Int, month: String): Flow<Double?>
 
     @Query("DELETE FROM transactions WHERE syncStatus = 'SYNCED' AND sheetRowId IS NOT NULL")
     suspend fun deleteSynced()

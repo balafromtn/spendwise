@@ -1,11 +1,17 @@
 package com.expensetracker.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.UUID
 
-@Entity(tableName = "transactions")
+@Entity(
+    tableName = "transactions",
+    indices = [Index(value = ["transactionId"], unique = true), Index(value = ["syncStatus"])]
+)
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val transactionId: String = UUID.randomUUID().toString(),
     val date: String,
     val time: String,
     val type: String,

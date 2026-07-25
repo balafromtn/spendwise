@@ -5,13 +5,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.expensetracker.ui.theme.ExpenseRed
@@ -43,34 +50,49 @@ fun SummaryCard(
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Income", style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        text = "\u20B9${"%.0f".format(income)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = IncomeGreen
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Expense", style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        text = "\u20B9${"%.0f".format(expense)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = ExpenseRed
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Savings", style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        text = "\u20B9${"%.0f".format(savings)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (savings >= 0) IncomeGreen else ExpenseRed
-                    )
-                }
+                SummaryStat(
+                    icon = Icons.Default.ArrowUpward,
+                    label = "Income",
+                    value = "\u20B9${"%.0f".format(income)}",
+                    color = IncomeGreen
+                )
+                SummaryStat(
+                    icon = Icons.Default.ArrowDownward,
+                    label = "Expense",
+                    value = "\u20B9${"%.0f".format(expense)}",
+                    color = ExpenseRed
+                )
+                SummaryStat(
+                    icon = Icons.Default.AccountBalance,
+                    label = "Savings",
+                    value = "\u20B9${"%.0f".format(savings)}",
+                    color = if (savings >= 0) IncomeGreen else ExpenseRed
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun SummaryStat(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = color,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
     }
 }

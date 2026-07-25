@@ -14,7 +14,6 @@ class AuthManager(private val context: Context) {
             .requestEmail()
             .requestScopes(Scope(TokenProvider.SPREADSHEETS_SCOPE))
             .requestIdToken(webClientId)
-            .requestServerAuthCode(webClientId)
             .build()
     }
 

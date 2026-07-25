@@ -34,7 +34,8 @@ data class MonthlySummary(
     val lowestIncome: Double = 0.0,
     val highestExpense: Double = 0.0,
     val lowestExpense: Double = 0.0,
-    val categoryBreakdown: List<CategoryBreakdown> = emptyList()
+    val categoryBreakdown: List<CategoryBreakdown> = emptyList(),
+    val averageWeeklySpend: Double = 0.0
 )
 
 data class CategoryBreakdown(

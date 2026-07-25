@@ -93,7 +93,11 @@ fun ExpenseTrackerNavHost(
                     },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Transaction",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
         }

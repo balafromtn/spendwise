@@ -7,7 +7,7 @@ object SheetsSchema {
 
     val TRANSACTIONS_HEADERS = listOf(
         "Date", "Time", "Type", "Category", "Amount (\u20B9)",
-        "Payment Method", "Notes", "Month", "Week No."
+        "Payment Method", "Notes", "Month", "Week No.", "Transaction ID"
     )
 
     val BUDGETS_HEADERS = listOf(
@@ -27,7 +27,8 @@ object SheetsSchema {
             transaction.paymentMethod,
             transaction.notes,
             transaction.month,
-            transaction.weekNo
+            transaction.weekNo,
+            transaction.transactionId
         )
     }
 

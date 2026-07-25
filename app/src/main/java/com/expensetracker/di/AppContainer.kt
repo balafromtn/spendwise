@@ -26,9 +26,8 @@ class AppContainer(private val context: Context) {
             context,
             ExpenseDatabase::class.java,
             "expense_tracker.db"
-        ).build()
+        ).addMigrations(ExpenseDatabase.MIGRATION_1_2).build()
 
-        // Seed default categories on first run
         CoroutineScope(Dispatchers.IO).launch {
             if (db.categoryDao().getCount() == 0) {
                 db.categoryDao().insertAll(ExpenseDatabase.defaultCategories())

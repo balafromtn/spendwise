@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 data class DashboardUiState(
@@ -28,7 +29,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    val transactions = container.database.transactionDao().getAllTransactions()
+    val recentTransactions = container.database.transactionDao().getRecentTransactions(10)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -38,10 +39,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun loadDashboard() {
         viewModelScope.launch {
             val month = dateUtils.currentMonthString()
-            container.aggregationUseCase.getMonthlySummary(month).collect { summary ->
+            val weekNo = dateUtils.currentWeekNumber()
+
+            val avgSpendFlow = container.database.transactionDao()
+                .getAverageWeeklySpend(weekNo, month)
+
+            combine(
+                container.aggregationUseCase.getMonthlySummary(month),
+                avgSpendFlow
+            ) { summary, avgSpend ->
+                summary.copy(averageWeeklySpend = avgSpend ?: 0.0)
+            }.collect { summary ->
                 _uiState.value = DashboardUiState(
                     summary = summary,
-                    recentTransactions = transactions.value.take(10),
+                    recentTransactions = recentTransactions.value,
                     isLoading = false
                 )
             }

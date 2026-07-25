@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,25 +37,36 @@ fun TransactionItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = category,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                imageVector = if (type == "Income") Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                contentDescription = type,
+                tint = if (type == "Income") IncomeGreen else ExpenseRed,
+                modifier = Modifier.size(20.dp)
             )
-            Row {
+            Column(modifier = Modifier.padding(start = 8.dp)) {
                 Text(
-                    text = paymentMethod,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = category,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
                 )
-                if (notes.isNotBlank()) {
+                Row {
                     Text(
-                        text = " \u00B7 $notes",
+                        text = paymentMethod,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (notes.isNotBlank()) {
+                        Text(
+                            text = " \u00B7 $notes",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }

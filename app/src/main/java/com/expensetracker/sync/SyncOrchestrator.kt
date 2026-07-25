@@ -36,14 +36,12 @@ class SyncOrchestrator(
         if (pending.isNotEmpty()) {
             sheetsService.appendTransactions(spreadsheetId, pending)
             for (t in pending) {
-                database.transactionDao().markSyncedNoRow(t.id)
+                database.transactionDao().markSyncedByTransactionId(t.transactionId)
             }
         }
     }
 
     private suspend fun pushPendingDeletes(spreadsheetId: String) {
-        // For MVP: mark as deleted locally. Full row-level delete in Sheets requires
-        // finding the exact row, which is complex. Local deletion is primary.
         val pendingDelete = database.transactionDao().getPendingDelete()
         for (t in pendingDelete) {
             database.transactionDao().deleteById(t.id)
@@ -61,36 +59,40 @@ class SyncOrchestrator(
     }
 
     private suspend fun pullFromSheets(spreadsheetId: String) {
-        // Read transactions from sheet
         val sheetTransactions = sheetsService.readAllTransactions(spreadsheetId)
-        if (sheetTransactions.isNotEmpty()) {
-            val header = sheetTransactions.first()
-            if (header.isNotEmpty() && header.first() == "Date") {
-                val dataRows = sheetTransactions.drop(1)
-                val entities = dataRows.mapNotNull { row ->
-                    try {
-                        if (row.size >= 9) {
-                            TransactionEntity(
-                                date = row[0].toString(),
-                                time = row[1].toString(),
-                                type = row[2].toString(),
-                                category = row[3].toString(),
-                                amount = row[4].toString().toDoubleOrNull() ?: 0.0,
-                                paymentMethod = row[5].toString(),
-                                notes = row[6].toString(),
-                                month = row[7].toString(),
-                                weekNo = row[8].toString().toIntOrNull() ?: 0,
-                                syncStatus = "SYNCED"
-                            )
-                        } else null
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-                if (entities.isNotEmpty()) {
-                    database.transactionDao().deleteSynced()
-                    database.transactionDao().insertAll(entities)
-                }
+        if (sheetTransactions.isEmpty()) return
+
+        val header = sheetTransactions.first()
+        if (header.isEmpty() || header.first() != "Date") return
+
+        val dataRows = sheetTransactions.drop(1)
+        val entities = dataRows.mapNotNull { row ->
+            try {
+                if (row.size >= 9) {
+                    val txnId = if (row.size >= 10) row[9].toString() else ""
+                    if (txnId.isBlank()) null else TransactionEntity(
+                        transactionId = txnId,
+                        date = row[0].toString(),
+                        time = row[1].toString(),
+                        type = row[2].toString(),
+                        category = row[3].toString(),
+                        amount = row[4].toString().toDoubleOrNull() ?: 0.0,
+                        paymentMethod = row[5].toString(),
+                        notes = row[6].toString(),
+                        month = row[7].toString(),
+                        weekNo = row[8].toString().toIntOrNull() ?: 0,
+                        syncStatus = "SYNCED"
+                    )
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        for (entity in entities) {
+            val existing = database.transactionDao().getByTransactionId(entity.transactionId)
+            if (existing == null) {
+                database.transactionDao().insert(entity)
             }
         }
     }

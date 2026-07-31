@@ -29,8 +29,16 @@ class AppContainer(private val context: Context) {
         ).addMigrations(ExpenseDatabase.MIGRATION_1_2).build()
 
         CoroutineScope(Dispatchers.IO).launch {
-            if (db.categoryDao().getCount() == 0) {
+            val existing = db.categoryDao().getAllOnce()
+            if (existing.isEmpty()) {
                 db.categoryDao().insertAll(ExpenseDatabase.defaultCategories())
+            } else {
+                val existingKeys = existing.map { it.name to it.type }.toSet()
+                val missing = ExpenseDatabase.defaultCategories()
+                    .filter { (it.name to it.type) !in existingKeys }
+                if (missing.isNotEmpty()) {
+                    db.categoryDao().insertAll(missing)
+                }
             }
         }
 

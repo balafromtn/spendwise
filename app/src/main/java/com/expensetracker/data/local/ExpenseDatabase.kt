@@ -56,7 +56,9 @@ abstract class ExpenseDatabase : RoomDatabase() {
             CategoryEntity(name = "Healthcare", type = "Expense", isDefault = true),
             CategoryEntity(name = "Education", type = "Expense", isDefault = true),
             CategoryEntity(name = "Salary", type = "Income", isDefault = true),
-            CategoryEntity(name = "Freelance", type = "Income", isDefault = true),
+            CategoryEntity(name = "Freelancing", type = "Income", isDefault = true),
+            CategoryEntity(name = "Allowance", type = "Income", isDefault = true),
+            CategoryEntity(name = "Scholarship", type = "Income", isDefault = true),
             CategoryEntity(name = "Investments", type = "Income", isDefault = true)
         )
     }

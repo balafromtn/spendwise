@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -45,8 +48,12 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
     )
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
 
-    val categories: StateFlow<List<CategoryEntity>> = container.database.categoryDao()
-        .getCategoriesByType("Expense")
+    val categories: StateFlow<List<CategoryEntity>> = _uiState
+        .map { it.type }
+        .distinctUntilChanged()
+        .flatMapLatest { type ->
+            container.database.categoryDao().getCategoriesByType(type)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun updateType(type: String) {

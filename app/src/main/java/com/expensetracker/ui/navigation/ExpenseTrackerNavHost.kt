@@ -176,7 +176,10 @@ fun ExpenseTrackerNavHost(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onSignOut = onSignOut,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onManageCategories = {
+                        navController.navigate(Screen.Categories.route)
+                    }
                 )
             }
         }

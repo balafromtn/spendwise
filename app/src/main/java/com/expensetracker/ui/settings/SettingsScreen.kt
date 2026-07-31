@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.SettingsBrightness
@@ -46,6 +47,7 @@ import com.expensetracker.ui.theme.ThemeMode
 fun SettingsScreen(
     onSignOut: () -> Unit,
     onNavigateBack: () -> Unit,
+    onManageCategories: () -> Unit,
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -111,6 +113,28 @@ fun SettingsScreen(
                 }
                 OutlinedButton(onClick = { showTimePicker = true }) {
                     Text("Change Time")
+                }
+            }
+
+            HorizontalDivider()
+
+            // Categories
+            SettingsSectionHeader(icon = Icons.Default.Category, title = "Categories")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Manage Categories", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Add or remove expense & income categories",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                OutlinedButton(onClick = onManageCategories) {
+                    Text("Manage")
                 }
             }
 

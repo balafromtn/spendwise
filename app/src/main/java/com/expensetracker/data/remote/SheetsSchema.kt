@@ -3,75 +3,84 @@ package com.expensetracker.data.remote
 object SheetsSchema {
     const val TRANSACTIONS_SHEET = "Transactions"
     const val BUDGETS_SHEET = "Budgets"
-    const val SUMMARY_SHEET = "Summary"
+    const val CATEGORIES_SHEET = "Categories"
+    const val METADATA_SHEET = "Metadata"
+
+    const val SCHEMA_VERSION = 2
+
+    const val KEY_SCHEMA_VERSION = "SchemaVersion"
+    const val KEY_LAST_SYNC = "LastSync"
+    const val KEY_APP_VERSION = "AppVersion"
+    const val KEY_USER_EMAIL = "UserEmail"
+    const val KEY_DEVICE_ID = "DeviceId"
+    const val KEY_LAST_VALIDATION = "LastValidation"
 
     val TRANSACTIONS_HEADERS = listOf(
+        "UUID", "Date", "Type", "Category", "Amount (\u20B9)",
+        "Payment Method", "Notes", "Created Time", "Updated Time", "Version", "Deleted"
+    )
+
+    val BUDGETS_HEADERS = listOf(
+        "UUID", "Month", "Category", "Budget Amount (\u20B9)", "Spent So Far (\u20B9)",
+        "Updated Time", "Version", "Deleted"
+    )
+
+    val CATEGORIES_HEADERS = listOf("Category", "Type", "Source", "Deleted")
+
+    val METADATA_HEADERS = listOf("Key", "Value")
+
+    // Legacy v1 Transactions headers (current installs), used for migration detection.
+    val LEGACY_TRANSACTIONS_HEADERS = listOf(
         "Date", "Time", "Type", "Category", "Amount (\u20B9)",
         "Payment Method", "Notes", "Month", "Week No.", "Transaction ID"
     )
 
-    val BUDGETS_HEADERS = listOf(
-        "Month (e.g. \"Apr 2026\")", "Category",
-        "Budget Amount (\u20B9)", "Spent So Far (\u20B9)"
-    )
-
-    val SUMMARY_HEADERS = listOf("Metric", "Value")
-
     fun transactionRow(transaction: com.expensetracker.data.local.entity.TransactionEntity): List<Any> {
         return listOf(
+            transaction.transactionId,
             transaction.date,
-            transaction.time,
             transaction.type,
             transaction.category,
             transaction.amount,
             transaction.paymentMethod,
             transaction.notes,
-            transaction.month,
-            transaction.weekNo,
-            transaction.transactionId
+            transaction.createdAt,
+            transaction.updatedAt,
+            transaction.version,
+            if (transaction.deleted) "TRUE" else "FALSE"
         )
     }
 
     fun budgetRow(budget: com.expensetracker.data.local.entity.BudgetEntity): List<Any> {
         return listOf(
+            budget.budgetId,
             budget.month,
             budget.category,
             budget.budgetAmount,
-            budget.spentSoFar
+            budget.spentSoFar,
+            budget.updatedAt,
+            budget.version,
+            if (budget.deleted) "TRUE" else "FALSE"
         )
     }
 
-    fun summaryRows(
-        totalIncome: Double,
-        totalExpense: Double,
-        netSavings: Double,
-        totalTransactions: Int,
-        highestIncome: Double,
-        lowestIncome: Double,
-        highestExpense: Double,
-        lowestExpense: Double,
-        incomeBreakdown: List<Pair<String, Double>>,
-        expenseBreakdown: List<Pair<String, Double>>
-    ): List<List<Any>> {
-        val rows = mutableListOf<List<Any>>()
-        rows.add(listOf("Total Income", totalIncome))
-        rows.add(listOf("Total Expense", totalExpense))
-        rows.add(listOf("Net Balance/Savings", netSavings))
-        rows.add(listOf("Total Transactions", totalTransactions))
-        rows.add(listOf("Highest Income", highestIncome))
-        rows.add(listOf("Lowest Income", lowestIncome))
-        rows.add(listOf("Highest Expense", highestExpense))
-        rows.add(listOf("Lowest Expense", lowestExpense))
-        rows.add(listOf("---", "---"))
-        rows.add(listOf("Category", "Amount | %"))
-        for ((cat, amt) in incomeBreakdown) {
-            val pct = if (totalIncome > 0) (amt / totalIncome) * 100 else 0.0
-            rows.add(listOf("$cat (Income)", "${"%.2f".format(amt)} | ${"%.1f".format(pct)}%"))
-        }
-        for ((cat, amt) in expenseBreakdown) {
-            val pct = if (totalExpense > 0) (amt / totalExpense) * 100 else 0.0
-            rows.add(listOf("$cat (Expense)", "${"%.2f".format(amt)} | ${"%.1f".format(pct)}%"))
-        }
-        return rows
+    fun categoryRow(category: com.expensetracker.data.local.entity.CategoryEntity): List<Any> {
+        return listOf(
+            category.name,
+            category.type,
+            if (category.isDefault) "Default" else "Custom",
+            "FALSE"
+        )
+    }
+
+    fun metadataRows(values: Map<String, String>): List<List<Any>> {
+        return METADATA_HEADERS.indices.map { listOf(METADATA_HEADERS[it], "") } +
+            values.map { (key, value) -> listOf(key, value) }
+    }
+
+    fun parseMetadata(rows: List<List<Any>>): Map<String, String> {
+        return rows.drop(1).mapNotNull { row ->
+            if (row.size >= 2) row[0].toString() to row[1].toString() else null
+        }.toMap()
     }
 }

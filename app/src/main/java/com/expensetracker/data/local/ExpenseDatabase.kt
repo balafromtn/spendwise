@@ -20,7 +20,7 @@ import java.util.UUID
         BudgetEntity::class,
         CategoryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {
@@ -47,6 +47,34 @@ abstract class ExpenseDatabase : RoomDatabase() {
 
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_transactions_transactionId ON transactions (transactionId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_syncStatus ON transactions (syncStatus)")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE transactions SET updatedAt = createdAt WHERE updatedAt = 0")
+
+                db.execSQL("ALTER TABLE budgets ADD COLUMN budgetId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE budgets ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE budgets ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE budgets ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE budgets SET updatedAt = CAST(strftime('%s','now') AS INTEGER) * 1000 WHERE updatedAt = 0")
+
+                val cursor = db.query("SELECT id FROM budgets WHERE budgetId = ''")
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(0)
+                    val uuid = UUID.randomUUID().toString()
+                    db.execSQL(
+                        "UPDATE budgets SET budgetId = ? WHERE id = ?",
+                        arrayOf(uuid, id)
+                    )
+                }
+                cursor.close()
+
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_budgets_budgetId ON budgets (budgetId)")
             }
         }
 

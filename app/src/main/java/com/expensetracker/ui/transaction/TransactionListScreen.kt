@@ -44,7 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.expensetracker.data.local.entity.TransactionEntity
+import com.expensetracker.domain.model.Transaction
 import com.expensetracker.domain.model.PaymentMethod
 import com.expensetracker.ui.components.TransactionItem
 import com.expensetracker.util.Format
@@ -57,7 +57,7 @@ fun TransactionListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
-    var transactionToDelete by remember { mutableStateOf<TransactionEntity?>(null) }
+    var transactionToDelete by remember { mutableStateOf<Transaction?>(null) }
 
     LaunchedEffect(uiState.isSearchActive) {
         if (uiState.isSearchActive) {

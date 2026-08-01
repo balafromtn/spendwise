@@ -29,7 +29,7 @@ class AppContainer(private val context: Context) {
             context,
             ExpenseDatabase::class.java,
             "expense_tracker.db"
-        ).addMigrations(ExpenseDatabase.MIGRATION_1_2).build()
+        ).addMigrations(ExpenseDatabase.MIGRATION_1_2, ExpenseDatabase.MIGRATION_2_3).build()
 
         CoroutineScope(Dispatchers.IO).launch {
             val seeded = context.dataStore.data.first()[categoriesSeedKey] ?: false
@@ -60,12 +60,24 @@ class AppContainer(private val context: Context) {
         SheetsService(tokenProvider)
     }
 
+    val transactionRepository: com.expensetracker.domain.repository.TransactionRepository by lazy {
+        com.expensetracker.data.repository.TransactionRepositoryImpl(database.transactionDao())
+    }
+
+    val budgetRepository: com.expensetracker.domain.repository.BudgetRepository by lazy {
+        com.expensetracker.data.repository.BudgetRepositoryImpl(database.budgetDao())
+    }
+
+    val categoryRepository: com.expensetracker.domain.repository.CategoryRepository by lazy {
+        com.expensetracker.data.repository.CategoryRepositoryImpl(database.categoryDao())
+    }
+
     val aggregationUseCase: AggregationUseCase by lazy {
         AggregationUseCase(database.transactionDao(), database.budgetDao())
     }
 
     val syncOrchestrator: SyncOrchestrator by lazy {
-        SyncOrchestrator(database, sheetsService, aggregationUseCase)
+        SyncOrchestrator(database, sheetsService, context)
     }
 
     val reminderScheduler: ReminderScheduler by lazy {

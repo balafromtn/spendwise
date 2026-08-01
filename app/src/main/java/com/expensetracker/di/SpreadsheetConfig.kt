@@ -1,28 +1,31 @@
 package com.expensetracker.di
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 object SpreadsheetConfig {
-    private const val PREFS_NAME = "spreadsheet_config"
-    private const val KEY_SPREADSHEET_ID = "spreadsheet_id"
+    val spreadsheetIdKey = stringPreferencesKey("spreadsheet_id")
 
     private var appContext: Context? = null
-    private var spreadsheetId: String = ""
 
     fun init(context: Context) {
         appContext = context.applicationContext
-        val prefs = appContext!!.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        spreadsheetId = prefs.getString(KEY_SPREADSHEET_ID, "") ?: ""
+    }
+
+    suspend fun getSpreadsheetId(): String {
+        val ctx = appContext ?: return ""
+        return ctx.dataStore.data.first()[spreadsheetIdKey] ?: ""
     }
 
     fun setSpreadsheetId(id: String) {
-        spreadsheetId = id
-        appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            ?.edit()
-            ?.putString(KEY_SPREADSHEET_ID, id)
-            ?.apply()
+        val ctx = appContext ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            ctx.dataStore.edit { it[spreadsheetIdKey] = id }
+        }
     }
-
-    fun getSpreadsheetId(): String = spreadsheetId
 }

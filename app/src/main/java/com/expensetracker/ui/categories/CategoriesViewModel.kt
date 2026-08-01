@@ -64,7 +64,9 @@ class CategoriesViewModel(application: Application) : AndroidViewModel(applicati
         }
         container.database.categoryDao().update(category.copy(name = trimmed))
         if (category.name != trimmed) {
-            container.database.transactionDao().renameTransactions(category.name, trimmed, category.type)
+            container.database.transactionDao().renameTransactions(
+                category.name, trimmed, category.type, System.currentTimeMillis()
+            )
         }
         _error.value = null
         return true

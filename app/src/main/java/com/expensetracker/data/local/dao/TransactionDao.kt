@@ -27,16 +27,21 @@ interface TransactionDao {
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("UPDATE transactions SET syncStatus = 'PENDING_DELETE' WHERE id = :id")
-    suspend fun markPendingDelete(id: Long)
+    @Query("UPDATE transactions SET deleted = 1, updatedAt = :now, version = version + 1 WHERE id = :id")
+    suspend fun markDeleted(id: Long, now: Long)
 
-    @Query("UPDATE transactions SET category = :newName WHERE category = :oldName AND type = :type")
-    suspend fun renameTransactions(oldName: String, newName: String, type: String)
+    @Query("""
+        UPDATE transactions 
+        SET category = :newName, syncStatus = 'PENDING', 
+            updatedAt = :now, version = version + 1 
+        WHERE category = :oldName AND type = :type AND deleted = 0
+    """)
+    suspend fun renameTransactions(oldName: String, newName: String, type: String, now: Long)
 
-    @Query("SELECT * FROM transactions WHERE syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE deleted = 0 ORDER BY createdAt DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC LIMIT :limit")
+    @Query("SELECT * FROM transactions WHERE deleted = 0 ORDER BY createdAt DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int = 5): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
@@ -45,46 +50,55 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE transactionId = :transactionId LIMIT 1")
     suspend fun getByTransactionId(transactionId: String): TransactionEntity?
 
-    @Query("SELECT transactionId FROM transactions WHERE syncStatus = 'PENDING'")
-    suspend fun getPendingTransactionIds(): List<String>
-
-    @Query("SELECT * FROM transactions WHERE syncStatus = 'PENDING'")
+    @Query("SELECT * FROM transactions WHERE syncStatus = 'PENDING' AND deleted = 0")
     suspend fun getPendingSync(): List<TransactionEntity>
 
-    @Query("SELECT * FROM transactions WHERE syncStatus = 'PENDING_DELETE'")
-    suspend fun getPendingDelete(): List<TransactionEntity>
+    @Query("SELECT * FROM transactions WHERE syncStatus = 'FAILED' AND deleted = 0")
+    suspend fun getFailedSync(): List<TransactionEntity>
 
-    @Query("UPDATE transactions SET syncStatus = 'SYNCED', sheetRowId = :sheetRowId WHERE id = :id")
-    suspend fun markSynced(id: Long, sheetRowId: Int)
+    @Query("UPDATE transactions SET syncStatus = 'PENDING' WHERE syncStatus = 'FAILED' AND deleted = 0")
+    suspend fun resetFailedToPending()
+
+    @Query("UPDATE transactions SET syncStatus = 'SYNCING' WHERE syncStatus IN ('PENDING', 'FAILED') AND deleted = 0")
+    suspend fun markSyncing()
+
+    @Query("UPDATE transactions SET syncStatus = 'PENDING' WHERE syncStatus = 'SYNCING'")
+    suspend fun resetSyncing()
+
+    @Query("UPDATE transactions SET syncStatus = 'FAILED' WHERE syncStatus IN ('PENDING', 'SYNCING')")
+    suspend fun markAllPendingFailed()
+
+    @Query("SELECT * FROM transactions WHERE deleted = 1")
+    suspend fun getDeleted(): List<TransactionEntity>
 
     @Query("UPDATE transactions SET syncStatus = 'SYNCED' WHERE id = :id")
-    suspend fun markSyncedNoRow(id: Long)
+    suspend fun markSynced(id: Long)
 
     @Query("UPDATE transactions SET syncStatus = 'SYNCED' WHERE transactionId = :transactionId")
     suspend fun markSyncedByTransactionId(transactionId: String)
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Income' AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Income' AND month = :month AND deleted = 0")
     fun getTotalIncomeByMonth(month: String): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Expense' AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Expense' AND month = :month AND deleted = 0")
     fun getTotalExpenseByMonth(month: String): Flow<Double?>
 
-    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE' GROUP BY category")
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = :type AND month = :month AND deleted = 0 GROUP BY category")
     fun getCategoryTotals(type: String, month: String): Flow<List<CategoryTotal>>
 
-    @Query("SELECT * FROM transactions WHERE month = :month AND syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE month = :month AND deleted = 0 ORDER BY createdAt DESC")
     fun getTransactionsByMonth(month: String): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE type = :type AND month = :month AND deleted = 0 ORDER BY createdAt DESC")
     fun getTransactionsByTypeAndMonth(type: String, month: String): Flow<List<TransactionEntity>>
 
     @Query("SELECT COUNT(*) FROM transactions")
     fun getTotalCount(): Flow<Int>
 
-    @Query("SELECT MAX(amount) FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    @Query("SELECT MAX(amount) FROM transactions WHERE type = :type AND month = :month AND deleted = 0")
     fun getHighestAmount(type: String, month: String): Flow<Double?>
 
-    @Query("SELECT MIN(amount) FROM transactions WHERE type = :type AND amount > 0 AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    @Query("SELECT MIN(amount) FROM transactions WHERE type = :type AND amount > 0 AND month = :month AND deleted = 0")
     fun getLowestAmount(type: String, month: String): Flow<Double?>
 
     @Query("""
@@ -93,7 +107,7 @@ interface TransactionDao {
         AND (:endDate IS NULL OR date <= :endDate)
         AND (:category IS NULL OR category = :category)
         AND (:paymentMethod IS NULL OR paymentMethod = :paymentMethod)
-        AND syncStatus != 'PENDING_DELETE'
+        AND deleted = 0
         ORDER BY createdAt DESC
     """)
     fun getFiltered(
@@ -103,8 +117,21 @@ interface TransactionDao {
         paymentMethod: String?
     ): Flow<List<TransactionEntity>>
 
-    @Query("DELETE FROM transactions WHERE syncStatus = 'SYNCED' AND sheetRowId IS NOT NULL")
-    suspend fun deleteSynced()
+    // Smart cache cleanup: synced rows older than the cutoff are removed first.
+    @Query("DELETE FROM transactions WHERE syncStatus = 'SYNCED' AND deleted = 0 AND createdAt < :cutoff")
+    suspend fun deleteSyncedCacheOlderThan(cutoff: Long): Int
+
+    // Keep only the newest :keep synced rows, removing the rest.
+    @Query("""
+        DELETE FROM transactions 
+        WHERE syncStatus = 'SYNCED' AND deleted = 0 
+        AND id NOT IN (
+            SELECT id FROM transactions 
+            WHERE syncStatus = 'SYNCED' AND deleted = 0 
+            ORDER BY createdAt DESC LIMIT :keep
+        )
+    """)
+    suspend fun deleteSyncedCacheExcess(keep: Int): Int
 }
 
 data class CategoryTotal(

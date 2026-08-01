@@ -42,7 +42,7 @@ class AggregationUseCase(
                     category = cat.category,
                     amount = cat.total,
                     percentage = if (totalIncome > 0) (cat.total / totalIncome) * 100 else 0.0,
-                    type = "Income"
+                    type = com.expensetracker.domain.model.TransactionType.INCOME
                 )
             }
 
@@ -51,7 +51,7 @@ class AggregationUseCase(
                     category = cat.category,
                     amount = cat.total,
                     percentage = if (totalExpense > 0) (cat.total / totalExpense) * 100 else 0.0,
-                    type = "Expense"
+                    type = com.expensetracker.domain.model.TransactionType.EXPENSE
                 )
             }
 
@@ -82,7 +82,9 @@ class AggregationUseCase(
                     budgetAmount = budget.budgetAmount,
                     spentSoFar = spentMap[budget.category] ?: 0.0,
                     syncStatus = budget.syncStatus,
-                    sheetRowId = budget.sheetRowId
+                    updatedAt = budget.updatedAt,
+                    version = budget.version,
+                    deleted = budget.deleted
                 )
             }
         }
@@ -94,13 +96,14 @@ class AggregationUseCase(
         } else {
             transactionDao.getTotalExpenseByMonth(month)
         }
+        val enumType = try { com.expensetracker.domain.model.TransactionType.valueOf(type.uppercase()) } catch (e: Exception) { com.expensetracker.domain.model.TransactionType.EXPENSE }
         return totalFlow.combine(transactionDao.getCategoryTotals(type, month)) { total, cats ->
             cats.map { cat ->
                 CategoryBreakdown(
                     category = cat.category,
                     amount = cat.total,
                     percentage = if ((total ?: 0.0) > 0) (cat.total / (total ?: 1.0)) * 100 else 0.0,
-                    type = type
+                    type = enumType
                 )
             }
         }

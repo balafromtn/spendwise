@@ -43,8 +43,6 @@ import com.expensetracker.ui.components.PieChart
 import com.expensetracker.ui.components.PieChartLegend
 import com.expensetracker.ui.components.SummaryCard
 import com.expensetracker.ui.components.TransactionItem
-import com.expensetracker.ui.theme.ExpenseRed
-import com.expensetracker.ui.theme.IncomeGreen
 import com.expensetracker.util.Format
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -144,13 +142,13 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 PieChart(
-                                    data = uiState.summary.categoryBreakdown.filter { it.type == "Expense" },
+                                    data = uiState.summary.categoryBreakdown.filter { it.type == com.expensetracker.domain.model.TransactionType.EXPENSE },
                                     size = 180f
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             PieChartLegend(
-                                data = uiState.summary.categoryBreakdown.filter { it.type == "Expense" }
+                                data = uiState.summary.categoryBreakdown.filter { it.type == com.expensetracker.domain.model.TransactionType.EXPENSE }
                             )
                         }
                     }

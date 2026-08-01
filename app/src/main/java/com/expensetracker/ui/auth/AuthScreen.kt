@@ -84,8 +84,8 @@ fun AuthScreen(
         } else {
             Button(
                 onClick = {
-                    val authManager = AuthManager(context)
-                    signInLauncher.launch(authManager.signInIntent)
+                    val app = context.applicationContext as com.expensetracker.ExpenseTrackerApp
+                    signInLauncher.launch(app.container.authManager.signInIntent)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

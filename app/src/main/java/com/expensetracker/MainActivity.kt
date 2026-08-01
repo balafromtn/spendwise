@@ -49,7 +49,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ExpenseTrackerMainScreen()
+                    val app = application as com.expensetracker.ExpenseTrackerApp
+                    ExpenseTrackerMainScreen(authManager = app.container.authManager)
                 }
             }
         }

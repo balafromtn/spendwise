@@ -1,12 +1,17 @@
 package com.expensetracker.ui.components
 
+import com.expensetracker.domain.model.PaymentMethod
+import com.expensetracker.domain.model.TransactionType
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -22,14 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.expensetracker.ui.theme.ExpenseRed
 import com.expensetracker.ui.theme.IncomeGreen
+import com.expensetracker.ui.theme.categoryColor
 import com.expensetracker.util.Format
 
 @Composable
 fun TransactionItem(
     category: String,
     amount: Double,
-    type: String,
-    paymentMethod: String,
+    type: TransactionType,
+    paymentMethod: PaymentMethod,
     time: String,
     notes: String,
     onClick: (() -> Unit)? = null,
@@ -49,20 +55,27 @@ fun TransactionItem(
             modifier = Modifier.weight(1f)
         ) {
             Icon(
-                imageVector = if (type == "Income") Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                contentDescription = type,
-                tint = if (type == "Income") IncomeGreen else ExpenseRed,
+                imageVector = if (type == TransactionType.INCOME) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                contentDescription = type.label,
+                tint = if (type == TransactionType.INCOME) IncomeGreen else ExpenseRed,
                 modifier = Modifier.size(20.dp)
             )
             Column(modifier = Modifier.padding(start = 8.dp)) {
-                Text(
-                    text = category,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(modifier = Modifier.size(8.dp)) {
+                        drawCircle(color = categoryColor(category))
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = category,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = categoryColor(category)
+                    )
+                }
                 Row {
                     Text(
-                        text = paymentMethod,
+                        text = paymentMethod.label,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -80,10 +93,10 @@ fun TransactionItem(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${if (type == "Income") "+" else "-"}${Format.inr(amount)}",
+                    text = "${if (type == TransactionType.INCOME) "+" else "-"}${Format.inr(amount)}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (type == "Income") IncomeGreen else ExpenseRed
+                    color = if (type == TransactionType.INCOME) IncomeGreen else ExpenseRed
                 )
                 Text(
                     text = time,

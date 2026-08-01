@@ -14,9 +14,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import com.expensetracker.domain.model.Transaction
+import com.expensetracker.domain.model.TransactionType
+import com.expensetracker.domain.model.PaymentMethod
+
 data class TransactionListUiState(
-    val transactions: List<TransactionEntity> = emptyList(),
-    val filteredTransactions: List<TransactionEntity> = emptyList(),
+    val transactions: List<Transaction> = emptyList(),
+    val filteredTransactions: List<Transaction> = emptyList(),
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val filterType: String? = null,
@@ -42,7 +46,7 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
     fun loadTransactions() {
         viewModelScope.launch {
-            container.database.transactionDao().getAllTransactions().collect { transactions ->
+            container.transactionRepository.getAllTransactions().collect { transactions ->
                 _uiState.value = _uiState.value.copy(
                     transactions = transactions,
                     filteredTransactions = applyFilters(transactions),
@@ -108,9 +112,9 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         applyFiltersToState()
     }
 
-    fun deleteTransaction(transaction: TransactionEntity) {
+    fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
-            container.database.transactionDao().markPendingDelete(transaction.id)
+            container.transactionRepository.delete(transaction)
             SyncWorker.enqueueImmediateSync(getApplication())
         }
     }
@@ -121,16 +125,16 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
         )
     }
 
-    private fun applyFilters(transactions: List<TransactionEntity>): List<TransactionEntity> {
+    private fun applyFilters(transactions: List<Transaction>): List<Transaction> {
         val state = _uiState.value
         val query = state.searchQuery.trim().lowercase()
         return transactions.filter { t ->
             val matchesSearch = query.isEmpty() ||
                     t.notes.lowercase().contains(query) ||
                     t.category.lowercase().contains(query)
-            val matchesType = state.filterType == null || t.type == state.filterType
+            val matchesType = state.filterType == null || t.type.label == state.filterType
             val matchesCategory = state.filterCategory == null || t.category == state.filterCategory
-            val matchesMethod = state.filterPaymentMethod == null || t.paymentMethod == state.filterPaymentMethod
+            val matchesMethod = state.filterPaymentMethod == null || t.paymentMethod.label == state.filterPaymentMethod
             val matchesStart = state.filterStartDate == null ||
                     dateUtils.parseSheetDate(t.date) >= dateUtils.parseSheetDate(state.filterStartDate)
             val matchesEnd = state.filterEndDate == null ||

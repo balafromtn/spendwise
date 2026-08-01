@@ -3,6 +3,7 @@ package com.expensetracker.domain.usecase
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.IsoFields
@@ -57,6 +58,24 @@ class DateUtils {
 
     fun epochMillisToLocalDateTime(millis: Long): LocalDateTime {
         return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime()
+    }
+
+    fun millisToTimeString(millis: Long): String {
+        return if (millis > 0) {
+            epochMillisToLocalDateTime(millis).format(sheetTimeFormatter)
+        } else {
+            ""
+        }
+    }
+
+    fun legacyDateTimeMillis(date: String, time: String): Long {
+        return try {
+            val d = parseSheetDate(date)
+            val t = if (time.isBlank()) LocalTime.MIDNIGHT else LocalTime.parse(time)
+            LocalDateTime.of(d, t).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     fun getMonthRange(monthString: String): Pair<String, String> {

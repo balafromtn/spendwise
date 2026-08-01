@@ -65,7 +65,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun signOut() {
         viewModelScope.launch {
-            val authManager = AuthManager(getApplication())
+            val authManager = container.authManager
             authManager.signOut()
         }
     }

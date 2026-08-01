@@ -1,5 +1,6 @@
 package com.expensetracker.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +19,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.expensetracker.ui.theme.ExpenseRed
-import com.expensetracker.ui.theme.IncomeGreen
+import com.expensetracker.ui.theme.ExpenseOnBrand
+import com.expensetracker.ui.theme.IncomeOnBrand
+import com.expensetracker.ui.theme.LocalBrandGradient
 import com.expensetracker.util.Format
 
 @Composable
@@ -34,16 +37,17 @@ fun SummaryCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        modifier = modifier
+            .fillMaxWidth()
+            .background(LocalBrandGradient.current, CardDefaults.shape),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
             Row(
                 modifier = Modifier
@@ -55,19 +59,19 @@ fun SummaryCard(
                     icon = Icons.Default.ArrowUpward,
                     label = "Income",
                     value = Format.inr(income),
-                    color = IncomeGreen
+                    color = IncomeOnBrand
                 )
                 SummaryStat(
                     icon = Icons.Default.ArrowDownward,
                     label = "Expense",
                     value = Format.inr(expense),
-                    color = ExpenseRed
+                    color = ExpenseOnBrand
                 )
                 SummaryStat(
                     icon = Icons.Default.AccountBalance,
                     label = "Savings",
                     value = Format.inr(savings),
-                    color = if (savings >= 0) IncomeGreen else ExpenseRed
+                    color = if (savings >= 0) IncomeOnBrand else ExpenseOnBrand
                 )
             }
         }
@@ -79,7 +83,7 @@ private fun SummaryStat(
     icon: ImageVector,
     label: String,
     value: String,
-    color: androidx.compose.ui.graphics.Color
+    color: Color
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
@@ -88,12 +92,12 @@ private fun SummaryStat(
             tint = color,
             modifier = Modifier.size(18.dp)
         )
-        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = Color.White
         )
     }
 }

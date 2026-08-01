@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.expensetracker.domain.model.CategoryBreakdown
-import com.expensetracker.ui.theme.ChartColors
+import com.expensetracker.ui.theme.categoryColor
 import com.expensetracker.util.Format
 
 @Composable
@@ -73,9 +73,9 @@ fun PieChart(
         val center = Offset(this.size.width / 2, this.size.height / 2)
 
         var startAngle = -90f
-        data.forEachIndexed { index, item ->
+        data.forEach { item ->
             val sweepAngle = (item.amount / total * 360f * animatedProgress).toFloat()
-            val color = ChartColors[index % ChartColors.size]
+            val color = categoryColor(item.category)
 
             drawArc(
                 color = color,
@@ -98,8 +98,8 @@ fun PieChartLegend(
 ) {
     val total = data.sumOf { it.amount }
     Column(modifier = modifier.fillMaxWidth()) {
-        data.forEachIndexed { index, item ->
-            val color = ChartColors[index % ChartColors.size]
+        data.forEach { item ->
+            val color = categoryColor(item.category)
             val percentage = if (total > 0) (item.amount / total * 100) else 0.0
             Row(
                 modifier = Modifier

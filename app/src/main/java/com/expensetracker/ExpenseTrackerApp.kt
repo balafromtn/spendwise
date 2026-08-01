@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import com.expensetracker.di.AppContainer
 import com.expensetracker.di.SpreadsheetConfig
 import com.expensetracker.data.remote.AuthManager
+import com.expensetracker.sync.SyncWorker
 
 class ExpenseTrackerApp : Application() {
 
@@ -23,12 +24,9 @@ class ExpenseTrackerApp : Application() {
             SpreadsheetConfig.setSpreadsheetId(spreadsheetId)
         }
 
-        val webClientId = BuildConfig.WEB_CLIENT_ID
-        if (webClientId.isNotBlank() && webClientId != "YOUR_WEB_CLIENT_ID_HERE") {
-            AuthManager.init(webClientId)
-        }
-        AuthManager.setContext(this)
-        AuthManager.updateSignInState()
+        container.authManager.updateSignInState()
+
+        SyncWorker.schedulePeriodicSync(this)
 
         createNotificationChannel()
     }

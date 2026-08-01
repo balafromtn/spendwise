@@ -8,47 +8,80 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val SpendwiseLightScheme = lightColorScheme(
-    primary = TealGreen,
+    primary = BrandPrimaryLight,
     onPrimary = Color.White,
-    primaryContainer = TealGreenLight,
-    onPrimaryContainer = Color(0xFF002114),
-    secondary = Terracotta,
-    onSecondary = Color.White,
-    secondaryContainer = TerracottaLight,
-    onSecondaryContainer = Color(0xFF3B1A00),
-    tertiary = Color(0xFF4A6267),
-    background = SurfaceLight,
-    onBackground = Color(0xFF1B1C1A),
+    primaryContainer = Color(0xFFCDEDE6),
+    onPrimaryContainer = Color(0xFF0F4C42),
+    secondary = BrandSecondaryLight,
+    onSecondary = Color(0xFF4A3226),
+    secondaryContainer = Color(0xFFFBE3D6),
+    onSecondaryContainer = Color(0xFF5C3A26),
+    tertiary = Color(0xFFC03C15),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFF9D9CC),
+    onTertiaryContainer = Color(0xFF4E1500),
+    background = BackgroundLight,
+    onBackground = TextLight,
     surface = SurfaceLight,
-    onSurface = Color(0xFF1B1C1A),
-    surfaceVariant = Color(0xFFE0E3DF),
-    onSurfaceVariant = Color(0xFF434843),
-    error = ErrorDark,
-    onError = Color.White
+    onSurface = TextLight,
+    surfaceVariant = Color(0xFFECE5E6),
+    onSurfaceVariant = Color(0xFF6B5F66),
+    surfaceContainerLowest = CardLight,
+    surfaceContainerLow = Color(0xFFF4F2F3),
+    surfaceContainer = Color(0xFFEBE9EA),
+    surfaceContainerHigh = Color(0xFFE3E0E2),
+    surfaceContainerHighest = Color(0xFFDCD8DA),
+    outline = Color(0xFF8A7F87),
+    outlineVariant = Color(0xFFD2C9CD),
+    error = ExpenseRed,
+    onError = Color.White,
+    errorContainer = Color(0xFFF6D3CB),
+    onErrorContainer = Color(0xFF4A0D04),
+    inverseSurface = TextLight,
+    inverseOnSurface = TextDark,
+    inversePrimary = BrandPrimaryDark,
+    surfaceTint = BrandPrimaryLight
 )
 
 private val SpendwiseDarkScheme = darkColorScheme(
-    primary = TealGreenLight,
-    onPrimary = Color(0xFF003827),
-    primaryContainer = TealGreen,
-    onPrimaryContainer = TealGreenLight,
-    secondary = TerracottaLight,
-    onSecondary = Color(0xFF5A2A10),
-    secondaryContainer = Terracotta,
-    onSecondaryContainer = TerracottaLight,
-    tertiary = Color(0xFFB1CACF),
-    background = SurfaceDark,
-    onBackground = Color(0xFFE1E3E0),
+    primary = BrandPrimaryDark,
+    onPrimary = Color(0xFF0A332D),
+    primaryContainer = Color(0xFF2E6A60),
+    onPrimaryContainer = Color(0xFFCDEDE6),
+    secondary = BrandSecondaryDark,
+    onSecondary = Color(0xFF46291C),
+    secondaryContainer = Color(0xFF5C4033),
+    onSecondaryContainer = Color(0xFFFBE3D6),
+    tertiary = Color(0xFFE08E6A),
+    onTertiary = Color(0xFF3A1500),
+    tertiaryContainer = Color(0xFF6B2F1A),
+    onTertiaryContainer = Color(0xFFF9D9CC),
+    background = BackgroundDark,
+    onBackground = TextDark,
     surface = SurfaceDark,
-    onSurface = Color(0xFFE1E3E0),
-    surfaceVariant = Color(0xFF434843),
-    onSurfaceVariant = Color(0xFFC3C8C2),
-    error = ErrorLight,
-    onError = Color(0xFF601410)
+    onSurface = TextDark,
+    surfaceVariant = Color(0xFF5F585F),
+    onSurfaceVariant = Color(0xFFC4BBC0),
+    surfaceContainerLowest = Color(0xFF464046),
+    surfaceContainerLow = SurfaceDark,
+    surfaceContainer = CardDark,
+    surfaceContainerHigh = Color(0xFF6B646B),
+    surfaceContainerHighest = Color(0xFF766F76),
+    outline = Color(0xFF9C9198),
+    outlineVariant = Color(0xFF5F585F),
+    error = Color(0xFFF08B72),
+    onError = Color(0xFF3A0D04),
+    errorContainer = Color(0xFF6E2A18),
+    onErrorContainer = Color(0xFFF9D9CC),
+    inverseSurface = TextDark,
+    inverseOnSurface = TextLight,
+    inversePrimary = BrandPrimaryLight,
+    surfaceTint = BrandPrimaryDark
 )
 
 @Composable
@@ -73,8 +106,12 @@ fun ExpenseTrackerTheme(
         else -> SpendwiseLightScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalBrandGradient provides (if (effectiveDarkTheme) BrandGradientDark else BrandGradientLight)
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = content
+        )
+    }
 }

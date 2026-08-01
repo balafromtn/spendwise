@@ -12,13 +12,14 @@ class TokenProvider(
 ) {
     companion object {
         const val SPREADSHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+        const val DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file"
     }
 
     fun getSheetsService(): Sheets? {
         val account = GoogleSignIn.getLastSignedInAccount(context) ?: return null
         val credential = GoogleAccountCredential.usingOAuth2(
             context,
-            listOf(SPREADSHEETS_SCOPE)
+            listOf(SPREADSHEETS_SCOPE, DRIVE_FILE_SCOPE)
         ).apply {
             selectedAccount = account.account
         }

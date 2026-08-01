@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
-import com.expensetracker.data.local.entity.BudgetEntity
 import com.expensetracker.data.local.entity.CategoryEntity
 import com.expensetracker.domain.model.Budget
 import com.expensetracker.domain.usecase.DateUtils
@@ -29,8 +28,8 @@ class BudgetViewModel(application: Application) : AndroidViewModel(application) 
     private val _budgets = MutableStateFlow<List<Budget>>(emptyList())
     val budgets: StateFlow<List<Budget>> = _budgets.asStateFlow()
 
-    val expenseCategories: StateFlow<List<CategoryEntity>> = container.database.categoryDao()
-        .getAllCategories()
+    val expenseCategories: StateFlow<List<com.expensetracker.domain.model.Category>> = container.categoryRepository
+        .getCategoriesByType("Expense")
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -53,14 +52,16 @@ class BudgetViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setBudget(category: String, amount: Double) {
         viewModelScope.launch {
-            val existing = container.database.budgetDao().getBudget(_selectedMonth.value, category)
+            val existing = container.budgetRepository.getBudget(_selectedMonth.value, category)
             if (existing != null) {
-                container.database.budgetDao().update(
-                    existing.copy(budgetAmount = amount, syncStatus = "PENDING")
+                container.budgetRepository.update(
+                    existing.copy(
+                        budgetAmount = amount
+                    )
                 )
             } else {
-                container.database.budgetDao().insert(
-                    BudgetEntity(
+                container.budgetRepository.insert(
+                    Budget(
                         month = _selectedMonth.value,
                         category = category,
                         budgetAmount = amount,
@@ -75,15 +76,8 @@ class BudgetViewModel(application: Application) : AndroidViewModel(application) 
 
     fun deleteBudget(budget: Budget) {
         viewModelScope.launch {
-            container.database.budgetDao().delete(
-                BudgetEntity(
-                    id = budget.id,
-                    month = budget.month,
-                    category = budget.category,
-                    budgetAmount = budget.budgetAmount,
-                    spentSoFar = budget.spentSoFar
-                )
-            )
+            container.budgetRepository.delete(budget)
+            SyncWorker.enqueueImmediateSync(getApplication())
             loadBudgets()
         }
     }

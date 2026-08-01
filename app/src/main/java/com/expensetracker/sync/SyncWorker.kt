@@ -20,11 +20,21 @@ class SyncWorker(
     override suspend fun doWork(): Result {
         return try {
             val container = (applicationContext as com.expensetracker.ExpenseTrackerApp).container
-            val syncOrchestrator = container.syncOrchestrator
-            syncOrchestrator.performSync()
+            container.syncOrchestrator.performSync()
             Result.success()
         } catch (e: Exception) {
-            if (runAttemptCount < 3) Result.retry() else Result.failure()
+            // Retry ladder: WorkManager exponential backoff (30s, 1m, 5m, 15m, ...).
+            // After repeated failures mark pending records FAILED (never deleted).
+            if (runAttemptCount >= 3) {
+                try {
+                    val container = (applicationContext as com.expensetracker.ExpenseTrackerApp).container
+                    container.syncOrchestrator.markPendingFailed()
+                } catch (ignored: Exception) {
+                }
+                Result.failure()
+            } else {
+                Result.retry()
+            }
         }
     }
 

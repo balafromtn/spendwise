@@ -23,5 +23,8 @@ data class TransactionEntity(
     val weekNo: Int,
     val syncStatus: String = "PENDING",
     val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val version: Int = 1,
+    val deleted: Boolean = false,
     val sheetRowId: Int? = null
 )

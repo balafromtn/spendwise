@@ -9,22 +9,16 @@ import androidx.compose.runtime.setValue
 import com.expensetracker.data.remote.AuthManager
 import com.expensetracker.ui.navigation.ExpenseTrackerNavHost
 
+import androidx.compose.runtime.collectAsState
+
 @Composable
-fun ExpenseTrackerMainScreen() {
-    var isSignedIn by remember { mutableStateOf(false) }
-    var authChecked by remember { mutableStateOf(false) }
+fun ExpenseTrackerMainScreen(authManager: AuthManager) {
+    val isSignedIn by authManager.isSignedIn.collectAsState()
 
-    LaunchedEffect(Unit) {
-        isSignedIn = AuthManager.isSignedInGlobal
-        authChecked = true
-    }
-
-    if (authChecked) {
-        ExpenseTrackerNavHost(
-            isSignedIn = isSignedIn,
-            onSignOut = {
-                isSignedIn = false
-            }
-        )
-    }
+    ExpenseTrackerNavHost(
+        isSignedIn = isSignedIn,
+        onSignOut = {
+            authManager.signOut()
+        }
+    )
 }

@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -18,7 +20,10 @@ data class AuthUiState(
     val error: String? = null
 )
 
-class AuthViewModel : ViewModel() {
+
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val container = (application as com.expensetracker.ExpenseTrackerApp).container
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -35,7 +40,7 @@ class AuthViewModel : ViewModel() {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(data)
                 val account = task.getResult(ApiException::class.java)
                 Log.d("AuthViewModel", "Sign-in successful: ${account?.email}")
-                AuthManager.updateSignInState()
+                container.authManager.updateSignInState()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isSignedIn = true

@@ -5,8 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
 import com.expensetracker.data.local.entity.CategoryEntity
-import com.expensetracker.data.local.entity.TransactionEntity
 import com.expensetracker.domain.model.PaymentMethod
+import com.expensetracker.domain.model.Transaction
+import com.expensetracker.domain.model.TransactionType
 import com.expensetracker.domain.usecase.DateUtils
 import com.expensetracker.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,16 +87,16 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
 
     fun loadForEdit(transactionId: Long) {
         viewModelScope.launch {
-            val transaction = container.database.transactionDao().getById(transactionId)
+            val transaction = container.transactionRepository.getById(transactionId)
             if (transaction != null) {
                 _uiState.value = AddTransactionUiState(
-                    type = transaction.type,
+                    type = transaction.type.label,
                     amount = transaction.amount.toString(),
                     category = transaction.category,
                     date = transaction.date,
                     time = transaction.time,
                     notes = transaction.notes,
-                    paymentMethod = transaction.paymentMethod,
+                    paymentMethod = transaction.paymentMethod.label,
                     isEditing = true,
                     editingId = transaction.id
                 )
@@ -124,30 +125,33 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
             val month = dateUtils.toMonthString(dateObj)
             val weekNo = dateUtils.toWeekNumber(dateObj)
 
-            val entity = TransactionEntity(
+            val existing = if (state.isEditing) {
+                container.transactionRepository.getById(state.editingId)
+            } else {
+                null
+            }
+
+            val entity = Transaction(
                 id = if (state.isEditing) state.editingId else 0,
-                transactionId = if (state.isEditing) {
-                    val existing = container.database.transactionDao().getById(state.editingId)
-                    existing?.transactionId ?: UUID.randomUUID().toString()
-                } else {
-                    UUID.randomUUID().toString()
-                },
+                transactionId = existing?.transactionId ?: UUID.randomUUID().toString(),
                 date = state.date,
                 time = state.time,
-                type = state.type,
+                type = try { TransactionType.valueOf(state.type.uppercase()) } catch (e: Exception) { TransactionType.EXPENSE },
                 category = state.category,
                 amount = amount,
-                paymentMethod = state.paymentMethod,
+                paymentMethod = try { PaymentMethod.valueOf(state.paymentMethod.uppercase()) } catch (e: Exception) { PaymentMethod.CASH },
                 notes = state.notes,
                 month = month,
                 weekNo = weekNo,
-                syncStatus = "PENDING"
+                syncStatus = "PENDING",
+                updatedAt = System.currentTimeMillis(),
+                version = if (existing != null) existing.version + 1 else 1
             )
 
             if (state.isEditing) {
-                container.database.transactionDao().update(entity)
+                container.transactionRepository.update(entity)
             } else {
-                container.database.transactionDao().insert(entity)
+                container.transactionRepository.insert(entity)
             }
 
             SyncWorker.enqueueImmediateSync(getApplication())

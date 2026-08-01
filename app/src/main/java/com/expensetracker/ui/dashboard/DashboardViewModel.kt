@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
-import com.expensetracker.data.local.entity.TransactionEntity
+import com.expensetracker.domain.model.Transaction
 import com.expensetracker.domain.model.MonthlySummary
 import com.expensetracker.domain.usecase.DateUtils
 import kotlinx.coroutines.Job
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val summary: MonthlySummary = MonthlySummary(),
-    val recentTransactions: List<TransactionEntity> = emptyList(),
+    val recentTransactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = true
 )
 
@@ -41,7 +41,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
             combine(
                 container.aggregationUseCase.getMonthlySummary(month),
-                container.database.transactionDao().getRecentTransactions(10)
+                container.transactionRepository.getRecentTransactions(10)
             ) { summary, recent ->
                 summary.copy(
                     averageWeeklySpend = if (weeksElapsed > 0) summary.totalExpense / weeksElapsed else 0.0

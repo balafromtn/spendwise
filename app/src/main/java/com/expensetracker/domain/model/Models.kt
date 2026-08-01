@@ -2,21 +2,24 @@ package com.expensetracker.domain.model
 
 data class Transaction(
     val id: Long = 0,
+    val transactionId: String = "",
     val date: String = "",
     val time: String = "",
-    val type: String = "Expense",
+    val type: TransactionType = TransactionType.EXPENSE,
     val category: String = "",
     val amount: Double = 0.0,
-    val paymentMethod: String = "Cash",
+    val paymentMethod: PaymentMethod = PaymentMethod.CASH,
     val notes: String = "",
     val month: String = "",
     val weekNo: Int = 0,
     val syncStatus: String = "PENDING",
     val createdAt: Long = System.currentTimeMillis(),
-    val sheetRowId: Int? = null
+    val updatedAt: Long = System.currentTimeMillis(),
+    val version: Int = 1,
+    val deleted: Boolean = false
 )
 
-enum class TransactionType { INCOME, EXPENSE }
+enum class TransactionType(val label: String) { INCOME("Income"), EXPENSE("Expense") }
 
 enum class PaymentMethod(val label: String) {
     CASH("Cash"),
@@ -42,7 +45,7 @@ data class CategoryBreakdown(
     val category: String,
     val amount: Double,
     val percentage: Double,
-    val type: String
+    val type: TransactionType
 )
 
 data class Budget(
@@ -52,7 +55,9 @@ data class Budget(
     val budgetAmount: Double = 0.0,
     val spentSoFar: Double = 0.0,
     val syncStatus: String = "PENDING",
-    val sheetRowId: Int? = null
+    val updatedAt: Long = System.currentTimeMillis(),
+    val version: Int = 1,
+    val deleted: Boolean = false
 ) {
     val utilizationPercent: Double
         get() = if (budgetAmount > 0) (spentSoFar / budgetAmount) * 100 else 0.0
@@ -67,7 +72,7 @@ data class Budget(
 data class Category(
     val id: Long = 0,
     val name: String = "",
-    val type: String = "Expense",
+    val type: TransactionType = TransactionType.EXPENSE,
     val isCustom: Boolean = false,
     val isDefault: Boolean = false
 )

@@ -5,24 +5,33 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
 import com.expensetracker.data.local.entity.BudgetEntity
+import com.expensetracker.data.local.entity.CategoryEntity
 import com.expensetracker.domain.model.Budget
 import com.expensetracker.domain.usecase.DateUtils
 import com.expensetracker.sync.SyncWorker
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class BudgetViewModel(application: Application) : AndroidViewModel(application) {
 
     private val container = (application as ExpenseTrackerApp).container
     private val dateUtils = DateUtils()
+    private var loadJob: Job? = null
 
     private val _selectedMonth = MutableStateFlow(dateUtils.currentMonthString())
     val selectedMonth: StateFlow<String> = _selectedMonth.asStateFlow()
 
     private val _budgets = MutableStateFlow<List<Budget>>(emptyList())
     val budgets: StateFlow<List<Budget>> = _budgets.asStateFlow()
+
+    val expenseCategories: StateFlow<List<CategoryEntity>> = container.database.categoryDao()
+        .getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadBudgets()
@@ -34,7 +43,8 @@ class BudgetViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun loadBudgets() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             container.aggregationUseCase.getBudgetsWithSpending(_selectedMonth.value).collect {
                 _budgets.value = it
             }

@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.expensetracker.domain.usecase.DateUtils
 import com.expensetracker.ui.components.BudgetProgressBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,15 +37,12 @@ fun BudgetScreen(
 ) {
     val selectedMonth by viewModel.selectedMonth.collectAsState()
     val budgets by viewModel.budgets.collectAsState()
+    val expenseCategories by viewModel.expenseCategories.collectAsState()
     var showSetBudgetDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf("") }
     var budgetAmountText by remember { mutableStateOf("") }
 
-    val months = listOf(
-        "Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026",
-        "May 2026", "Jun 2026", "Jul 2026", "Aug 2026",
-        "Sep 2026", "Oct 2026", "Nov 2026", "Dec 2026"
-    )
+    val months = remember { DateUtils().availableMonths() }
 
     LazyColumn(
         modifier = Modifier
@@ -103,17 +101,14 @@ fun BudgetScreen(
     }
 
     if (showSetBudgetDialog) {
-        val expenseCategories = listOf(
-            "Food", "Transport", "Shopping", "Bills",
-            "Entertainment", "Healthcare", "Education"
-        )
+        val budgetCategories = expenseCategories.filter { it.type == "Expense" }.map { it.name }
         AlertDialog(
             onDismissRequest = { showSetBudgetDialog = false },
             title = { Text("Set Budget") },
             text = {
                 Column {
                     Text("Category")
-                    expenseCategories.forEach { cat ->
+                    budgetCategories.forEach { cat ->
                         FilterChip(
                             selected = editingCategory == cat,
                             onClick = { editingCategory = cat },

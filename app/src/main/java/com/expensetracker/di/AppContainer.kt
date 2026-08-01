@@ -3,6 +3,8 @@ package com.expensetracker.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.expensetracker.data.local.ExpenseDatabase
@@ -15,6 +17,7 @@ import com.expensetracker.notifications.ReminderScheduler
 import com.expensetracker.sync.SyncOrchestrator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -29,16 +32,16 @@ class AppContainer(private val context: Context) {
         ).addMigrations(ExpenseDatabase.MIGRATION_1_2).build()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val existing = db.categoryDao().getAllOnce()
-            if (existing.isEmpty()) {
-                db.categoryDao().insertAll(ExpenseDatabase.defaultCategories())
-            } else {
+            val seeded = context.dataStore.data.first()[categoriesSeedKey] ?: false
+            if (!seeded) {
+                val existing = db.categoryDao().getAllOnce()
                 val existingKeys = existing.map { it.name to it.type }.toSet()
                 val missing = ExpenseDatabase.defaultCategories()
                     .filter { (it.name to it.type) !in existingKeys }
                 if (missing.isNotEmpty()) {
                     db.categoryDao().insertAll(missing)
                 }
+                context.dataStore.edit { it[categoriesSeedKey] = true }
             }
         }
 
@@ -71,5 +74,9 @@ class AppContainer(private val context: Context) {
 
     val dateUtils: DateUtils by lazy {
         DateUtils()
+    }
+
+    companion object {
+        val categoriesSeedKey = booleanPreferencesKey("categories_seeded")
     }
 }

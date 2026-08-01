@@ -27,10 +27,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.expensetracker.ui.auth.AuthScreen
-import com.expensetracker.ui.budget.BudgetScreen
 import com.expensetracker.ui.categories.CategoriesScreen
 import com.expensetracker.ui.dashboard.DashboardScreen
-import com.expensetracker.ui.reports.ReportsScreen
 import com.expensetracker.ui.settings.SettingsScreen
 import com.expensetracker.ui.transaction.AddTransactionScreen
 import com.expensetracker.ui.transaction.TransactionListScreen
@@ -155,22 +153,7 @@ fun ExpenseTrackerNavHost(
             }
 
             composable(Screen.Analytics.route) {
-                AnalyticsScreen(
-                    onNavigateToReports = {
-                        navController.navigate(Screen.Reports.route)
-                    },
-                    onNavigateToBudget = {
-                        navController.navigate(Screen.Budget.route)
-                    }
-                )
-            }
-
-            composable(Screen.Reports.route) {
-                ReportsScreen()
-            }
-
-            composable(Screen.Budget.route) {
-                BudgetScreen()
+                AnalyticsScreen()
             }
 
             composable(Screen.Settings.route) {

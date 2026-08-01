@@ -20,10 +20,7 @@ import com.expensetracker.ui.reports.ReportsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnalyticsScreen(
-    onNavigateToReports: () -> Unit,
-    onNavigateToBudget: () -> Unit
-) {
+fun AnalyticsScreen() {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Reports", "Budget")
 

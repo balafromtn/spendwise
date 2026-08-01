@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.expensetracker.domain.model.CategoryBreakdown
 import com.expensetracker.ui.theme.ChartColors
+import com.expensetracker.util.Format
 
 @Composable
 fun PieChart(
@@ -116,7 +117,7 @@ fun PieChartLegend(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = "\u20B9${"%.0f".format(item.amount)}",
+                    text = Format.inr(item.amount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )

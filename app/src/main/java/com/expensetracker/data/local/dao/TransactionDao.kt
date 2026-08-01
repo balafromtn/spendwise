@@ -27,10 +27,16 @@ interface TransactionDao {
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("SELECT * FROM transactions ORDER BY createdAt DESC")
+    @Query("UPDATE transactions SET syncStatus = 'PENDING_DELETE' WHERE id = :id")
+    suspend fun markPendingDelete(id: Long)
+
+    @Query("UPDATE transactions SET category = :newName WHERE category = :oldName AND type = :type")
+    suspend fun renameTransactions(oldName: String, newName: String, type: String)
+
+    @Query("SELECT * FROM transactions WHERE syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT :limit")
+    @Query("SELECT * FROM transactions WHERE syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int = 5): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
@@ -57,29 +63,29 @@ interface TransactionDao {
     @Query("UPDATE transactions SET syncStatus = 'SYNCED' WHERE transactionId = :transactionId")
     suspend fun markSyncedByTransactionId(transactionId: String)
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Income' AND month = :month")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Income' AND month = :month AND syncStatus != 'PENDING_DELETE'")
     fun getTotalIncomeByMonth(month: String): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Expense' AND month = :month")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'Expense' AND month = :month AND syncStatus != 'PENDING_DELETE'")
     fun getTotalExpenseByMonth(month: String): Flow<Double?>
 
-    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = :type AND month = :month GROUP BY category")
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE' GROUP BY category")
     fun getCategoryTotals(type: String, month: String): Flow<List<CategoryTotal>>
 
-    @Query("SELECT * FROM transactions WHERE month = :month ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE month = :month AND syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
     fun getTransactionsByMonth(month: String): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE type = :type AND month = :month ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE' ORDER BY createdAt DESC")
     fun getTransactionsByTypeAndMonth(type: String, month: String): Flow<List<TransactionEntity>>
 
     @Query("SELECT COUNT(*) FROM transactions")
     fun getTotalCount(): Flow<Int>
 
-    @Query("SELECT MAX(amount) FROM transactions WHERE type = :type")
-    fun getHighestAmount(type: String): Flow<Double?>
+    @Query("SELECT MAX(amount) FROM transactions WHERE type = :type AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    fun getHighestAmount(type: String, month: String): Flow<Double?>
 
-    @Query("SELECT MIN(amount) FROM transactions WHERE type = :type AND amount > 0")
-    fun getLowestAmount(type: String): Flow<Double?>
+    @Query("SELECT MIN(amount) FROM transactions WHERE type = :type AND amount > 0 AND month = :month AND syncStatus != 'PENDING_DELETE'")
+    fun getLowestAmount(type: String, month: String): Flow<Double?>
 
     @Query("""
         SELECT * FROM transactions 
@@ -87,6 +93,7 @@ interface TransactionDao {
         AND (:endDate IS NULL OR date <= :endDate)
         AND (:category IS NULL OR category = :category)
         AND (:paymentMethod IS NULL OR paymentMethod = :paymentMethod)
+        AND syncStatus != 'PENDING_DELETE'
         ORDER BY createdAt DESC
     """)
     fun getFiltered(
@@ -95,9 +102,6 @@ interface TransactionDao {
         category: String?,
         paymentMethod: String?
     ): Flow<List<TransactionEntity>>
-
-    @Query("SELECT AVG(amount) FROM transactions WHERE type = 'Expense' AND weekNo = :weekNo AND month = :month")
-    fun getAverageWeeklySpend(weekNo: Int, month: String): Flow<Double?>
 
     @Query("DELETE FROM transactions WHERE syncStatus = 'SYNCED' AND sheetRowId IS NOT NULL")
     suspend fun deleteSynced()

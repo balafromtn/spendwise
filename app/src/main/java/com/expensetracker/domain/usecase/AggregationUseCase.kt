@@ -3,7 +3,6 @@ package com.expensetracker.domain.usecase
 import com.expensetracker.data.local.dao.BudgetDao
 import com.expensetracker.data.local.dao.CategoryTotal
 import com.expensetracker.data.local.dao.TransactionDao
-import com.expensetracker.data.local.entity.BudgetEntity
 import com.expensetracker.data.local.entity.TransactionEntity
 import com.expensetracker.domain.model.Budget
 import com.expensetracker.domain.model.CategoryBreakdown
@@ -23,10 +22,10 @@ class AggregationUseCase(
             transactionDao.getTransactionsByMonth(month),
             transactionDao.getCategoryTotals("Income", month),
             transactionDao.getCategoryTotals("Expense", month),
-            transactionDao.getHighestAmount("Income"),
-            transactionDao.getLowestAmount("Income"),
-            transactionDao.getHighestAmount("Expense"),
-            transactionDao.getLowestAmount("Expense")
+            transactionDao.getHighestAmount("Income", month),
+            transactionDao.getLowestAmount("Income", month),
+            transactionDao.getHighestAmount("Expense", month),
+            transactionDao.getLowestAmount("Expense", month)
         ) { results ->
             val totalIncome = (results[0] as? Double) ?: 0.0
             val totalExpense = (results[1] as? Double) ?: 0.0
@@ -85,15 +84,6 @@ class AggregationUseCase(
                     syncStatus = budget.syncStatus,
                     sheetRowId = budget.sheetRowId
                 )
-            }
-        }
-    }
-
-    suspend fun updateBudgetSpending(month: String) {
-        val budgets = budgetDao.getBudgetsByMonth(month)
-        budgets.collect { budgetList ->
-            for (budget in budgetList) {
-                // Spending is computed reactively via Flow, no need to persist
             }
         }
     }

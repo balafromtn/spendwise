@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -31,7 +33,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -40,8 +44,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.expensetracker.data.local.entity.TransactionEntity
 import com.expensetracker.domain.model.PaymentMethod
 import com.expensetracker.ui.components.TransactionItem
+import com.expensetracker.util.Format
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -51,6 +57,7 @@ fun TransactionListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
+    var transactionToDelete by remember { mutableStateOf<TransactionEntity?>(null) }
 
     LaunchedEffect(uiState.isSearchActive) {
         if (uiState.isSearchActive) {
@@ -191,11 +198,39 @@ fun TransactionListScreen(
                         type = transaction.type,
                         paymentMethod = transaction.paymentMethod,
                         time = transaction.time,
-                        notes = transaction.notes
+                        notes = transaction.notes,
+                        onClick = { onEditTransaction(transaction.id) },
+                        onDelete = { transactionToDelete = transaction }
                     )
                     HorizontalDivider()
                 }
             }
         }
+    }
+
+    transactionToDelete?.let { transaction ->
+        AlertDialog(
+            onDismissRequest = { transactionToDelete = null },
+            title = { Text("Delete Transaction") },
+            text = {
+                Text(
+                    "Delete ${transaction.category} of ${Format.inr(transaction.amount)}? " +
+                        "It will be removed from Google Sheets on the next sync."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteTransaction(transaction)
+                    transactionToDelete = null
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { transactionToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

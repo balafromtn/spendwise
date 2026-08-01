@@ -7,6 +7,7 @@ import com.expensetracker.ExpenseTrackerApp
 import com.expensetracker.data.local.entity.TransactionEntity
 import com.expensetracker.domain.model.MonthlySummary
 import com.expensetracker.domain.usecase.DateUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val container = (application as ExpenseTrackerApp).container
     private val dateUtils = DateUtils()
+    private var loadJob: Job? = null
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -32,19 +34,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun loadDashboard() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val month = dateUtils.currentMonthString()
-            val weekNo = dateUtils.currentWeekNumber()
-
-            val avgSpendFlow = container.database.transactionDao()
-                .getAverageWeeklySpend(weekNo, month)
+            val weeksElapsed = dateUtils.weeksElapsedInMonth(dateUtils.today())
 
             combine(
                 container.aggregationUseCase.getMonthlySummary(month),
-                avgSpendFlow,
                 container.database.transactionDao().getRecentTransactions(10)
-            ) { summary, avgSpend, recent ->
-                summary.copy(averageWeeklySpend = avgSpend ?: 0.0) to recent
+            ) { summary, recent ->
+                summary.copy(
+                    averageWeeklySpend = if (weeksElapsed > 0) summary.totalExpense / weeksElapsed else 0.0
+                ) to recent
             }.collect { (summary, recent) ->
                 _uiState.value = DashboardUiState(
                     summary = summary,

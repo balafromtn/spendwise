@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
 import com.expensetracker.data.local.entity.TransactionEntity
+import com.expensetracker.domain.usecase.DateUtils
+import com.expensetracker.sync.SyncWorker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +30,7 @@ data class TransactionListUiState(
 class TransactionListViewModel(application: Application) : AndroidViewModel(application) {
 
     private val container = (application as ExpenseTrackerApp).container
+    private val dateUtils = DateUtils()
     private var searchDebounceJob: Job? = null
 
     private val _uiState = MutableStateFlow(TransactionListUiState())
@@ -107,7 +110,8 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
 
     fun deleteTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
-            container.database.transactionDao().delete(transaction)
+            container.database.transactionDao().markPendingDelete(transaction.id)
+            SyncWorker.enqueueImmediateSync(getApplication())
         }
     }
 
@@ -127,8 +131,10 @@ class TransactionListViewModel(application: Application) : AndroidViewModel(appl
             val matchesType = state.filterType == null || t.type == state.filterType
             val matchesCategory = state.filterCategory == null || t.category == state.filterCategory
             val matchesMethod = state.filterPaymentMethod == null || t.paymentMethod == state.filterPaymentMethod
-            val matchesStart = state.filterStartDate == null || t.date >= state.filterStartDate
-            val matchesEnd = state.filterEndDate == null || t.date <= state.filterEndDate
+            val matchesStart = state.filterStartDate == null ||
+                    dateUtils.parseSheetDate(t.date) >= dateUtils.parseSheetDate(state.filterStartDate)
+            val matchesEnd = state.filterEndDate == null ||
+                    dateUtils.parseSheetDate(t.date) <= dateUtils.parseSheetDate(state.filterEndDate)
             matchesSearch && matchesType && matchesCategory && matchesMethod && matchesStart && matchesEnd
         }
     }

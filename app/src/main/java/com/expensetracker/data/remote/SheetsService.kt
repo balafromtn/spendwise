@@ -6,6 +6,7 @@ import com.expensetracker.data.local.entity.TransactionEntity
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.AddSheetRequest
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest
+import com.google.api.services.sheets.v4.model.ClearValuesRequest
 import com.google.api.services.sheets.v4.model.Request
 import com.google.api.services.sheets.v4.model.ValueRange
 import kotlinx.coroutines.Dispatchers
@@ -90,18 +91,44 @@ class SheetsService(private val tokenProvider: TokenProvider) {
     suspend fun appendBudgets(
         spreadsheetId: String,
         budgets: List<BudgetEntity>
-    ) = withContext(Dispatchers.IO) {
-        val service = getService() ?: return@withContext
-        if (budgets.isEmpty()) return@withContext
+    ): Int? = withContext(Dispatchers.IO) {
+        val service = getService() ?: return@withContext null
+        if (budgets.isEmpty()) return@withContext null
         val rows = budgets.map { SheetsSchema.budgetRow(it) }
         val lastCol = ('A' + SheetsSchema.BUDGETS_HEADERS.size - 1).toChar()
         val range = "${SheetsSchema.BUDGETS_SHEET}!A:${lastCol}"
         val body = ValueRange().setValues(rows)
-        service.spreadsheets().values()
+        val response = service.spreadsheets().values()
             .append(spreadsheetId, range, body)
             .setValueInputOption("RAW")
             .setInsertDataOption("INSERT_ROWS")
             .execute()
+        parseStartRow(response?.updates?.updatedRange)
+    }
+
+    suspend fun writeTransactions(
+        spreadsheetId: String,
+        rows: List<List<Any>>
+    ) = withContext(Dispatchers.IO) {
+        val service = getService() ?: return@withContext
+        val lastCol = ('A' + SheetsSchema.TRANSACTIONS_HEADERS.size - 1).toChar()
+        val range = "${SheetsSchema.TRANSACTIONS_SHEET}!A:${lastCol}"
+        service.spreadsheets().values()
+            .clear(spreadsheetId, range, ClearValuesRequest())
+            .execute()
+        if (rows.isNotEmpty()) {
+            val body = ValueRange().setValues(rows)
+            service.spreadsheets().values()
+                .update(spreadsheetId, range, body)
+                .setValueInputOption("RAW")
+                .execute()
+        }
+    }
+
+    private fun parseStartRow(updatedRange: String?): Int? {
+        if (updatedRange == null) return null
+        val match = Regex("([A-Z]+)(\\d+)").find(updatedRange.substringAfterLast('!'))
+        return match?.groupValues?.get(2)?.toIntOrNull()
     }
 
     suspend fun rewriteSummary(

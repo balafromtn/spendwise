@@ -18,11 +18,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.expensetracker.domain.usecase.DateUtils
 import com.expensetracker.ui.components.PieChart
 import com.expensetracker.ui.components.PieChartLegend
 import com.expensetracker.ui.components.SummaryCard
@@ -35,11 +37,7 @@ fun ReportsScreen(
     val selectedMonth by viewModel.selectedMonth.collectAsState()
     val summary by viewModel.summary.collectAsState()
 
-    val months = listOf(
-        "Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026",
-        "May 2026", "Jun 2026", "Jul 2026", "Aug 2026",
-        "Sep 2026", "Oct 2026", "Nov 2026", "Dec 2026"
-    )
+    val months = remember { DateUtils().availableMonths() }
 
     LazyColumn(
         modifier = Modifier

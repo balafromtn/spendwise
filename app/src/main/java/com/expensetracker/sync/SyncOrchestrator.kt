@@ -1,12 +1,12 @@
 package com.expensetracker.sync
 
 import com.expensetracker.data.local.ExpenseDatabase
-import com.expensetracker.data.local.entity.BudgetEntity
 import com.expensetracker.data.local.entity.TransactionEntity
 import com.expensetracker.data.remote.SheetsSchema
 import com.expensetracker.data.remote.SheetsService
 import com.expensetracker.domain.usecase.AggregationUseCase
 import com.expensetracker.domain.usecase.DateUtils
+import kotlinx.coroutines.flow.first
 
 class SyncOrchestrator(
     private val database: ExpenseDatabase,
@@ -43,6 +43,20 @@ class SyncOrchestrator(
 
     private suspend fun pushPendingDeletes(spreadsheetId: String) {
         val pendingDelete = database.transactionDao().getPendingDelete()
+        if (pendingDelete.isEmpty()) return
+
+        val deletedIds = pendingDelete.map { it.transactionId }.toSet()
+        val allRows = sheetsService.readAllTransactions(spreadsheetId)
+        if (allRows.isEmpty()) return
+
+        val header = allRows.first()
+        if (header.isEmpty() || header.first() != "Date") return
+
+        val filteredRows = listOf(header) + allRows.drop(1).filter { row ->
+            val id = if (row.size >= 10) row[9].toString() else ""
+            id !in deletedIds
+        }
+        sheetsService.writeTransactions(spreadsheetId, filteredRows)
         for (t in pendingDelete) {
             database.transactionDao().deleteById(t.id)
         }
@@ -51,9 +65,11 @@ class SyncOrchestrator(
     private suspend fun pushPendingBudgets(spreadsheetId: String) {
         val pending = database.budgetDao().getPendingSync()
         if (pending.isNotEmpty()) {
-            sheetsService.appendBudgets(spreadsheetId, pending)
-            for (b in pending) {
-                database.budgetDao().markSynced(b.id, 0)
+            val startRow = sheetsService.appendBudgets(spreadsheetId, pending)
+            if (startRow != null) {
+                pending.forEachIndexed { index, b ->
+                    database.budgetDao().markSynced(b.id, startRow + index)
+                }
             }
         }
     }
@@ -99,28 +115,27 @@ class SyncOrchestrator(
 
     private suspend fun recomputeAndPushSummary(spreadsheetId: String) {
         val month = dateUtils.currentMonthString()
-        aggregationUseCase.getMonthlySummary(month).collect { summary ->
-            val incomeBreakdown = summary.categoryBreakdown
-                .filter { it.type == "Income" }
-                .map { it.category to it.amount }
-            val expenseBreakdown = summary.categoryBreakdown
-                .filter { it.type == "Expense" }
-                .map { it.category to it.amount }
+        val summary = aggregationUseCase.getMonthlySummary(month).first()
 
-            val rows = SheetsSchema.summaryRows(
-                totalIncome = summary.totalIncome,
-                totalExpense = summary.totalExpense,
-                netSavings = summary.netSavings,
-                totalTransactions = summary.transactionCount,
-                highestIncome = summary.highestIncome,
-                lowestIncome = summary.lowestIncome,
-                highestExpense = summary.highestExpense,
-                lowestExpense = summary.lowestExpense,
-                incomeBreakdown = incomeBreakdown,
-                expenseBreakdown = expenseBreakdown
-            )
-            sheetsService.rewriteSummary(spreadsheetId, rows)
-            return@collect
-        }
+        val incomeBreakdown = summary.categoryBreakdown
+            .filter { it.type == "Income" }
+            .map { it.category to it.amount }
+        val expenseBreakdown = summary.categoryBreakdown
+            .filter { it.type == "Expense" }
+            .map { it.category to it.amount }
+
+        val rows = SheetsSchema.summaryRows(
+            totalIncome = summary.totalIncome,
+            totalExpense = summary.totalExpense,
+            netSavings = summary.netSavings,
+            totalTransactions = summary.transactionCount,
+            highestIncome = summary.highestIncome,
+            lowestIncome = summary.lowestIncome,
+            highestExpense = summary.highestExpense,
+            lowestExpense = summary.lowestExpense,
+            incomeBreakdown = incomeBreakdown,
+            expenseBreakdown = expenseBreakdown
+        )
+        sheetsService.rewriteSummary(spreadsheetId, rows)
     }
 }

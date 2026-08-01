@@ -27,7 +27,13 @@ class DateUtils {
 
     fun currentMonthString(): String = toMonthString(today())
 
-    fun currentWeekNumber(): Int = toWeekNumber(today())
+    fun weeksElapsedInMonth(date: LocalDate): Int = ((date.dayOfMonth + 6) / 7).coerceAtLeast(1)
+
+    fun availableMonths(count: Int = 24): List<String> {
+        val today = today()
+        val start = today.withDayOfMonth(1).minusMonths((count - 1).toLong())
+        return (0 until count).map { start.plusMonths(it.toLong()).format(monthFormatter) }
+    }
 
     fun parseSheetDate(dateStr: String): LocalDate {
         return try {

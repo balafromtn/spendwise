@@ -35,8 +35,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun loadSettings() {
-        val (hour, minute) = container.reminderScheduler.getSavedReminderTime()
         viewModelScope.launch {
+            val (hour, minute) = container.reminderScheduler.getSavedReminderTime()
             val data = prefs.data.first()
             val themeModeStr = data[THEME_KEY] ?: ThemeMode.SYSTEM.name
             val themeMode = try { ThemeMode.valueOf(themeModeStr) } catch (_: Exception) { ThemeMode.SYSTEM }
@@ -58,7 +58,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setReminderTime(hour: Int, minute: Int) {
         _uiState.value = _uiState.value.copy(reminderHour = hour, reminderMinute = minute)
-        container.reminderScheduler.saveReminderTime(hour, minute)
+        viewModelScope.launch {
+            container.reminderScheduler.saveReminderTime(hour, minute)
+        }
     }
 
     fun signOut() {

@@ -10,11 +10,13 @@ import com.google.android.gms.tasks.Task
 class AuthManager(private val context: Context) {
 
     private val gso: GoogleSignInOptions by lazy {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        val builder = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .requestScopes(Scope(TokenProvider.SPREADSHEETS_SCOPE))
-            .requestIdToken(webClientId)
-            .build()
+        if (webClientId.isNotBlank()) {
+            builder.requestIdToken(webClientId)
+        }
+        builder.build()
     }
 
     private val googleSignInClient: GoogleSignInClient by lazy {
@@ -30,7 +32,7 @@ class AuthManager(private val context: Context) {
     fun isSignedIn(): Boolean = GoogleSignIn.getLastSignedInAccount(context) != null
 
     companion object {
-        lateinit var webClientId: String
+        var webClientId: String = ""
             private set
         private var appContext: Context? = null
 

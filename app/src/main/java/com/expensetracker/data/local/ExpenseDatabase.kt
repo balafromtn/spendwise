@@ -38,7 +38,10 @@ abstract class ExpenseDatabase : RoomDatabase() {
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(0)
                     val uuid = UUID.randomUUID().toString()
-                    db.execSQL("UPDATE transactions SET transactionId = '$uuid' WHERE id = $id")
+                    db.execSQL(
+                        "UPDATE transactions SET transactionId = ? WHERE id = ?",
+                        arrayOf(uuid, id)
+                    )
                 }
                 cursor.close()
 

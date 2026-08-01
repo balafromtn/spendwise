@@ -10,9 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.expensetracker.domain.model.Budget
+import com.expensetracker.ui.theme.NearLimitOrange
 import com.expensetracker.ui.theme.OverBudgetRed
 import com.expensetracker.ui.theme.SafeGreen
 import com.expensetracker.ui.theme.WarningYellow
+import com.expensetracker.util.Format
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -24,8 +26,9 @@ fun BudgetProgressBar(
 ) {
     val progress = (budget.utilizationPercent / 100).coerceIn(0.0, 1.5).toFloat()
     val color = when {
-        budget.isOverBudget -> OverBudgetRed
-        budget.utilizationPercent >= 75.0 -> WarningYellow
+        budget.isOverBudget || budget.utilizationPercent >= 100.0 -> OverBudgetRed
+        budget.utilizationPercent >= 75.0 -> NearLimitOrange
+        budget.utilizationPercent >= 50.0 -> WarningYellow
         else -> SafeGreen
     }
 
@@ -50,7 +53,7 @@ fun BudgetProgressBar(
             )
         }
         Text(
-            text = "\u20B9${"%.0f".format(budget.spentSoFar)} / \u20B9${"%.0f".format(budget.budgetAmount)} (${budget.utilizationPercent.toInt()}%)",
+            text = "${Format.inr(budget.spentSoFar)} / ${Format.inr(budget.budgetAmount)} (${budget.utilizationPercent.toInt()}%)",
             style = MaterialTheme.typography.bodySmall,
             color = if (budget.isOverBudget) OverBudgetRed else MaterialTheme.colorScheme.onSurfaceVariant
         )

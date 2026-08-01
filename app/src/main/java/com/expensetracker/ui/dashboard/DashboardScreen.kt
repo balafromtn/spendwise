@@ -45,6 +45,7 @@ import com.expensetracker.ui.components.SummaryCard
 import com.expensetracker.ui.components.TransactionItem
 import com.expensetracker.ui.theme.ExpenseRed
 import com.expensetracker.ui.theme.IncomeGreen
+import com.expensetracker.util.Format
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,7 +120,7 @@ fun DashboardScreen(
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                                 Text(
-                                    text = "\u20B9${"%.0f".format(uiState.summary.averageWeeklySpend)}",
+                                    text = Format.inr(uiState.summary.averageWeeklySpend),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer

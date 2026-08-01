@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.expensetracker.ui.theme.ExpenseRed
 import com.expensetracker.ui.theme.IncomeGreen
+import com.expensetracker.util.Format
 
 @Composable
 fun SummaryCard(
@@ -53,19 +54,19 @@ fun SummaryCard(
                 SummaryStat(
                     icon = Icons.Default.ArrowUpward,
                     label = "Income",
-                    value = "\u20B9${"%.0f".format(income)}",
+                    value = Format.inr(income),
                     color = IncomeGreen
                 )
                 SummaryStat(
                     icon = Icons.Default.ArrowDownward,
                     label = "Expense",
-                    value = "\u20B9${"%.0f".format(expense)}",
+                    value = Format.inr(expense),
                     color = ExpenseRed
                 )
                 SummaryStat(
                     icon = Icons.Default.AccountBalance,
                     label = "Savings",
-                    value = "\u20B9${"%.0f".format(savings)}",
+                    value = Format.inr(savings),
                     color = if (savings >= 0) IncomeGreen else ExpenseRed
                 )
             }

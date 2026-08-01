@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.expensetracker.ExpenseTrackerApp
 import com.expensetracker.domain.model.MonthlySummary
 import com.expensetracker.domain.usecase.DateUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
 
     private val container = (application as ExpenseTrackerApp).container
     private val dateUtils = DateUtils()
+    private var loadJob: Job? = null
 
     private val _selectedMonth = MutableStateFlow(dateUtils.currentMonthString())
     val selectedMonth: StateFlow<String> = _selectedMonth.asStateFlow()
@@ -32,7 +34,8 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadReport() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             container.aggregationUseCase.getMonthlySummary(_selectedMonth.value).collect {
                 _summary.value = it
             }

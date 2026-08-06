@@ -19,10 +19,7 @@ class ExpenseTrackerApp : Application() {
 
         // Initialize configs
         SpreadsheetConfig.init(this)
-        val spreadsheetId = BuildConfig.SPREADSHEET_ID
-        if (spreadsheetId.isNotBlank() && spreadsheetId != "YOUR_SPREADSHEET_ID_HERE") {
-            SpreadsheetConfig.setSpreadsheetId(spreadsheetId)
-        }
+        // SpreadsheetId is now dynamically set during Google Sign-in flow in AuthViewModel
 
         container.authManager.updateSignInState()
 

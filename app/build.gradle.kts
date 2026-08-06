@@ -112,6 +112,7 @@ dependencies {
     implementation(libs.google.api.client)
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.sheets)
+    implementation(libs.google.api.services.drive)
     implementation(libs.google.http.client)
     implementation(libs.google.http.gson)
 

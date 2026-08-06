@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.expensetracker.data.local.ExpenseDatabase
 import com.expensetracker.data.remote.AuthManager
+import com.expensetracker.data.remote.DriveService
 import com.expensetracker.data.remote.SheetsService
 import com.expensetracker.data.remote.TokenProvider
 import com.expensetracker.domain.usecase.AggregationUseCase
@@ -58,6 +59,10 @@ class AppContainer(private val context: Context) {
 
     val sheetsService: SheetsService by lazy {
         SheetsService(tokenProvider)
+    }
+
+    val driveService: DriveService by lazy {
+        DriveService(tokenProvider)
     }
 
     val transactionRepository: com.expensetracker.domain.repository.TransactionRepository by lazy {

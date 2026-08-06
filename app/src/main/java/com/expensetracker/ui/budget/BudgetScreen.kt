@@ -101,7 +101,7 @@ fun BudgetScreen(
     }
 
     if (showSetBudgetDialog) {
-        val budgetCategories = expenseCategories.filter { it.type == "Expense" }.map { it.name }
+        val budgetCategories = expenseCategories.filter { it.type == com.expensetracker.domain.model.TransactionType.EXPENSE }.map { it.name }
         AlertDialog(
             onDismissRequest = { showSetBudgetDialog = false },
             title = { Text("Set Budget") },

@@ -15,8 +15,6 @@ class SyncOrchestrator(
     private val sheetsService: SheetsService,
     private val context: Context
 ) {
-    private val cacheRetentionDays = 30L
-    private val cacheMaxRecords = 500
 
     suspend fun performSync() {
         val spreadsheetId = SpreadsheetConfig.getSpreadsheetId()
@@ -292,9 +290,7 @@ class SyncOrchestrator(
     // ------------------------------------------------------------------
 
     private suspend fun cleanupCache() {
-        val cutoff = System.currentTimeMillis() - cacheRetentionDays * 24 * 60 * 60 * 1000
-        database.transactionDao().deleteSyncedCacheOlderThan(cutoff)
-        database.transactionDao().deleteSyncedCacheExcess(cacheMaxRecords)
+        // No longer deleting synced cache so users can view their entire history offline.
     }
 
     private suspend fun updateMetadata(spreadsheetId: String) {

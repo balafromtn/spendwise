@@ -41,6 +41,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 val account = task.getResult(ApiException::class.java)
                 Log.d("AuthViewModel", "Sign-in successful: ${account?.email}")
                 container.authManager.updateSignInState()
+                
+                // Create or find spreadsheet in Google Drive
+                val spreadsheetId = container.driveService.findOrCreateSpreadsheet("SpendWise Database")
+                if (spreadsheetId != null) {
+                    com.expensetracker.di.SpreadsheetConfig.setSpreadsheetId(spreadsheetId)
+                    com.expensetracker.sync.SyncWorker.enqueueImmediateSync(getApplication())
+                } else {
+                    Log.e("AuthViewModel", "Failed to setup Google Sheet. Sync will not work until resolved.")
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isSignedIn = true

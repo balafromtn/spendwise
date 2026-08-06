@@ -32,6 +32,23 @@ class TokenProvider(
             .build()
     }
 
+    fun getDriveService(): com.google.api.services.drive.Drive? {
+        val account = GoogleSignIn.getLastSignedInAccount(context) ?: return null
+        val credential = GoogleAccountCredential.usingOAuth2(
+            context,
+            listOf(SPREADSHEETS_SCOPE, DRIVE_FILE_SCOPE)
+        ).apply {
+            selectedAccount = account.account
+        }
+        return com.google.api.services.drive.Drive.Builder(
+            com.google.api.client.http.javanet.NetHttpTransport(),
+            GsonFactory.getDefaultInstance(),
+            credential
+        )
+            .setApplicationName("Spendwise")
+            .build()
+    }
+
     fun isAuthorized(): Boolean {
         return GoogleSignIn.getLastSignedInAccount(context) != null
     }

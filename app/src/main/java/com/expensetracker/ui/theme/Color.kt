@@ -41,16 +41,16 @@ val IncomeOnBrand = Color(0xFF4ADE80) // Green
 val ExpenseOnBrand = Color(0xFFF87171) // Red
 
 val ChartColors = listOf(
-    Color(0xFF1E3A8A),
-    Color(0xFF1E40AF),
-    Color(0xFF1D4ED8),
-    Color(0xFF2563EB),
-    Color(0xFF3B82F6),
-    Color(0xFF60A5FA),
-    Color(0xFF93C5FD),
-    Color(0xFFBFDBFE),
-    Color(0xFF6366F1), // Indigo shade
-    Color(0xFF818CF8)  // Light indigo
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF8B5CF6), // Violet
+    Color(0xFFEC4899), // Pink
+    Color(0xFFF97316), // Orange
+    Color(0xFFF59E0B), // Amber
+    Color(0xFF14B8A6), // Teal
+    Color(0xFF10B981), // Emerald
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF84CC16), // Lime
+    Color(0xFF64748B)  // Slate
 )
 
 // Deterministic unique color per category

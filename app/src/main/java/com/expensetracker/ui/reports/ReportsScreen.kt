@@ -84,7 +84,7 @@ fun ReportsScreen(
             )
         }
 
-        val expenseBreakdown = summary.categoryBreakdown.filter { it.type == "Expense" }
+        val expenseBreakdown = summary.categoryBreakdown.filter { it.type == com.expensetracker.domain.model.TransactionType.EXPENSE }
         if (expenseBreakdown.isNotEmpty()) {
             item {
                 Column {
@@ -106,7 +106,7 @@ fun ReportsScreen(
             }
         }
 
-        val incomeBreakdown = summary.categoryBreakdown.filter { it.type == "Income" }
+        val incomeBreakdown = summary.categoryBreakdown.filter { it.type == com.expensetracker.domain.model.TransactionType.INCOME }
         if (incomeBreakdown.isNotEmpty()) {
             item {
                 Column {

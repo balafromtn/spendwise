@@ -21,6 +21,7 @@ data class TransactionEntity(
     val notes: String,
     val month: String,
     val weekNo: Int,
+    val dateEpoch: Long = 0L,
     val syncStatus: String = "PENDING",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),

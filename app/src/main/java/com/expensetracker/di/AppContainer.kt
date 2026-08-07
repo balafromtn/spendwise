@@ -30,7 +30,7 @@ class AppContainer(private val context: Context) {
             context,
             ExpenseDatabase::class.java,
             "expense_tracker.db"
-        ).addMigrations(ExpenseDatabase.MIGRATION_1_2, ExpenseDatabase.MIGRATION_2_3).build()
+        ).addMigrations(ExpenseDatabase.MIGRATION_1_2, ExpenseDatabase.MIGRATION_2_3, ExpenseDatabase.MIGRATION_3_4).build()
 
         CoroutineScope(Dispatchers.IO).launch {
             val seeded = context.dataStore.data.first()[categoriesSeedKey] ?: false

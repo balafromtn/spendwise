@@ -30,7 +30,12 @@ class TransactionRepositoryImpl(
         category: String?,
         paymentMethod: String?
     ): Flow<List<Transaction>> {
-        return dao.getFiltered(startDate, endDate, category, paymentMethod).map { entities ->
+        val dateUtils = com.expensetracker.domain.usecase.DateUtils()
+        val startEpoch = startDate?.let { dateUtils.parseSheetDate(it)?.let { d -> dateUtils.toEpochMillis(d) } }
+        val endEpoch = endDate?.let { dateUtils.parseSheetDate(it)?.let { d ->
+            dateUtils.toEpochMillis(d) + (24 * 60 * 60 * 1000 - 1) // end of that day
+        } }
+        return dao.getFiltered(startEpoch, endEpoch, category, paymentMethod).map { entities ->
             entities.map { it.toDomain() }
         }
     }
@@ -40,14 +45,19 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun insert(transaction: Transaction) {
-        dao.insert(transaction.toEntity())
+        val dateUtils = com.expensetracker.domain.usecase.DateUtils()
+        val dateEpoch = dateUtils.parseSheetDate(transaction.date)?.let { dateUtils.toEpochMillis(it) } ?: System.currentTimeMillis()
+        dao.insert(transaction.toEntity().copy(dateEpoch = dateEpoch))
     }
 
     override suspend fun update(transaction: Transaction) {
         val existing = dao.getById(transaction.id)
         if (existing != null) {
+            val dateUtils = com.expensetracker.domain.usecase.DateUtils()
+            val dateEpoch = dateUtils.parseSheetDate(transaction.date)?.let { dateUtils.toEpochMillis(it) } ?: existing.dateEpoch
             val updated = transaction.toEntity().copy(
                 transactionId = existing.transactionId,
+                dateEpoch = dateEpoch,
                 version = existing.version + 1,
                 updatedAt = System.currentTimeMillis(),
                 syncStatus = "PENDING"

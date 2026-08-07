@@ -2,6 +2,7 @@ package com.expensetracker.sync
 
 import android.content.Context
 import android.provider.Settings
+import android.util.Log
 import com.expensetracker.BuildConfig
 import com.expensetracker.data.local.ExpenseDatabase
 import com.expensetracker.data.local.entity.TransactionEntity
@@ -31,7 +32,7 @@ class SyncOrchestrator(
             cleanupCache()
             updateMetadata(spreadsheetId)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncOrchestrator", "Sync failed", e)
             throw e
         }
     }
@@ -42,10 +43,19 @@ class SyncOrchestrator(
     }
 
     private suspend fun resetStaleStates() {
-        database.transactionDao().resetSyncing()
-        database.transactionDao().resetFailedToPending()
-        database.budgetDao().resetSyncing()
-        database.budgetDao().resetFailedToPending()
+        // Short-circuit: only run reset queries if there's actually something stale
+        val hasSyncingTx = database.transactionDao().getPendingSync().isNotEmpty() ||
+            database.transactionDao().getFailedSync().isNotEmpty()
+        val hasSyncingBudgets = database.budgetDao().getPendingSync().isNotEmpty()
+
+        if (hasSyncingTx) {
+            database.transactionDao().resetSyncing()
+            database.transactionDao().resetFailedToPending()
+        }
+        if (hasSyncingBudgets) {
+            database.budgetDao().resetSyncing()
+            database.budgetDao().resetFailedToPending()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -70,7 +80,7 @@ class SyncOrchestrator(
         }
 
         val toAppend = mutableListOf<TransactionEntity>()
-        val toUpdate = mutableListOf<Pair<Int, TransactionEntity>>()
+        val toUpdate = mutableListOf<Pair<Int, List<Any>>>()
         val toMarkSynced = mutableListOf<Long>()
 
         for (t in pending) {
@@ -83,10 +93,11 @@ class SyncOrchestrator(
                 val remoteWins = remote != null &&
                     SyncUtils.isRemoteNewer(remote.updatedAt, remote.version, t.updatedAt, t.version)
                 if (remoteWins) {
+                    Log.i("SyncOrchestrator", "Conflict resolved: kept remote version for transaction UUID=${t.transactionId} (remote v${remote!!.version} > local v${t.version})")
                     database.transactionDao().update(remote.copy(id = t.id))
                     database.transactionDao().markSynced(t.id)
                 } else {
-                    toUpdate.add(rowIndex to t)
+                    toUpdate.add(rowIndex to SheetsSchema.transactionRow(t))
                     toMarkSynced.add(t.id)
                 }
             }
@@ -95,8 +106,9 @@ class SyncOrchestrator(
         if (toAppend.isNotEmpty()) {
             sheetsService.appendTransactions(spreadsheetId, toAppend)
         }
-        for ((rowIndex, t) in toUpdate) {
-            sheetsService.updateTransactionRow(spreadsheetId, rowIndex, t)
+        // Batch update instead of per-row HTTP calls
+        if (toUpdate.isNotEmpty()) {
+            sheetsService.batchUpdateRows(spreadsheetId, SheetsSchema.TRANSACTIONS_SHEET, toUpdate)
         }
         for (id in toMarkSynced) {
             database.transactionDao().markSynced(id)
@@ -121,7 +133,7 @@ class SyncOrchestrator(
         }
 
         val toAppend = mutableListOf<com.expensetracker.data.local.entity.BudgetEntity>()
-        val toUpdate = mutableListOf<Pair<Int, com.expensetracker.data.local.entity.BudgetEntity>>()
+        val toUpdate = mutableListOf<Pair<Int, List<Any>>>()
         val toMarkSynced = mutableListOf<Long>()
 
         for (b in pending) {
@@ -134,10 +146,11 @@ class SyncOrchestrator(
                 val remoteWins = remote != null &&
                     SyncUtils.isRemoteNewer(remote.updatedAt, remote.version, b.updatedAt, b.version)
                 if (remoteWins) {
+                    Log.i("SyncOrchestrator", "Conflict resolved: kept remote version for budget UUID=${b.budgetId} (remote v${remote!!.version} > local v${b.version})")
                     database.budgetDao().update(remote.copy(id = b.id))
                     database.budgetDao().markSynced(b.id)
                 } else {
-                    toUpdate.add(rowIndex to b)
+                    toUpdate.add(rowIndex to SheetsSchema.budgetRow(b))
                     toMarkSynced.add(b.id)
                 }
             }
@@ -146,8 +159,9 @@ class SyncOrchestrator(
         if (toAppend.isNotEmpty()) {
             sheetsService.appendBudgets(spreadsheetId, toAppend)
         }
-        for ((rowIndex, b) in toUpdate) {
-            sheetsService.updateBudgetRow(spreadsheetId, rowIndex, b)
+        // Batch update instead of per-row HTTP calls
+        if (toUpdate.isNotEmpty()) {
+            sheetsService.batchUpdateRows(spreadsheetId, SheetsSchema.BUDGETS_SHEET, toUpdate)
         }
         for (id in toMarkSynced) {
             database.budgetDao().markSynced(id)
@@ -174,10 +188,10 @@ class SyncOrchestrator(
                     allRows.drop(1).forEachIndexed { index, row ->
                         val uuid = if (row.size >= SheetsRef.TRANSACTION_COLUMNS) row[0].toString().trim() else ""
                         if (uuid in deletedUuids) {
-                            rowIndicesToDelete.add(index + 2) // +1 for header, +1 for 1-based index
+                            rowIndicesToDelete.add(index + 2)
                         }
                     }
-                    sheetsService.deleteRows(spreadsheetId, com.expensetracker.data.remote.SheetsSchema.TRANSACTIONS_SHEET, rowIndicesToDelete)
+                    sheetsService.deleteRows(spreadsheetId, SheetsSchema.TRANSACTIONS_SHEET, rowIndicesToDelete)
                 }
             }
             for (t in deletedTx) {
@@ -198,7 +212,7 @@ class SyncOrchestrator(
                             rowIndicesToDelete.add(index + 2)
                         }
                     }
-                    sheetsService.deleteRows(spreadsheetId, com.expensetracker.data.remote.SheetsSchema.BUDGETS_SHEET, rowIndicesToDelete)
+                    sheetsService.deleteRows(spreadsheetId, SheetsSchema.BUDGETS_SHEET, rowIndicesToDelete)
                 }
             }
             for (b in deletedBudgets) {

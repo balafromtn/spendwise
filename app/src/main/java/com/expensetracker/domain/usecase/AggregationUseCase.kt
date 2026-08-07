@@ -55,6 +55,21 @@ class AggregationUseCase(
                 )
             }
 
+            val dateUtils = DateUtils()
+            val monthDate = try {
+                java.time.LocalDate.parse("01-$month", java.time.format.DateTimeFormatter.ofPattern("dd-MMM yyyy"))
+            } catch (e: Exception) {
+                java.time.LocalDate.now()
+            }
+            val weeksElapsed = dateUtils.weeksElapsedInMonth(
+                if (monthDate.month == java.time.LocalDate.now().month && monthDate.year == java.time.LocalDate.now().year) {
+                    java.time.LocalDate.now() // Current month: use today for accurate "weeks so far"
+                } else {
+                    monthDate.withDayOfMonth(monthDate.lengthOfMonth()) // Past month: use last day
+                }
+            )
+            val avgWeekly = if (weeksElapsed > 0) totalExpense / weeksElapsed else 0.0
+
             MonthlySummary(
                 totalIncome = totalIncome,
                 totalExpense = totalExpense,
@@ -64,7 +79,8 @@ class AggregationUseCase(
                 lowestIncome = lowestIncome,
                 highestExpense = highestExpense,
                 lowestExpense = lowestExpense,
-                categoryBreakdown = incomeBreakdown + expenseBreakdown
+                categoryBreakdown = incomeBreakdown + expenseBreakdown,
+                averageWeeklySpend = avgWeekly
             )
         }
     }

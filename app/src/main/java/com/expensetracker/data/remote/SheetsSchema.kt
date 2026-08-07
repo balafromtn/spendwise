@@ -74,7 +74,7 @@ object SheetsSchema {
     }
 
     fun metadataRows(values: Map<String, String>): List<List<Any>> {
-        return METADATA_HEADERS.indices.map { listOf(METADATA_HEADERS[it], "") } +
+        return listOf(METADATA_HEADERS) +
             values.map { (key, value) -> listOf(key, value) }
     }
 

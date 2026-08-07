@@ -1,5 +1,7 @@
 package com.expensetracker.domain.usecase
 
+import android.util.Log
+
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -30,13 +32,16 @@ class DateUtils {
 
     fun weeksElapsedInMonth(date: LocalDate): Int = ((date.dayOfMonth + 6) / 7).coerceAtLeast(1)
 
+    fun toEpochMillis(date: LocalDate): Long =
+        date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
     fun availableMonths(count: Int = 24): List<String> {
         val today = today()
         val start = today.withDayOfMonth(1).minusMonths((count - 1).toLong())
         return (0 until count).map { start.plusMonths(it.toLong()).format(monthFormatter) }
     }
 
-    fun parseSheetDate(dateStr: String): LocalDate {
+    fun parseSheetDate(dateStr: String): LocalDate? {
         return try {
             LocalDate.parse(dateStr, sheetDateFormatter)
         } catch (e: Exception) {
@@ -48,10 +53,12 @@ class DateUtils {
                     val year = parts[2].toInt()
                     LocalDate.of(year, month, day)
                 } else {
-                    LocalDate.now()
+                    Log.w("DateUtils", "Unparseable date string: $dateStr")
+                    null
                 }
             } catch (e2: Exception) {
-                LocalDate.now()
+                Log.w("DateUtils", "Failed to parse date: $dateStr", e2)
+                null
             }
         }
     }
@@ -78,14 +85,14 @@ class DateUtils {
         }
     }
 
-    fun getMonthRange(monthString: String): Pair<String, String> {
+    fun getMonthRange(monthString: String): Pair<Long, Long> {
         val date = try {
-            LocalDate.parse("01-$monthString", DateTimeFormatter.ofPattern("dd-MMM-yyyy"))
+            LocalDate.parse("01-$monthString", DateTimeFormatter.ofPattern("dd-MMM yyyy"))
         } catch (e: Exception) {
             today()
         }
-        val start = date.withDayOfMonth(1).format(sheetDateFormatter)
-        val end = date.withDayOfMonth(date.lengthOfMonth()).format(sheetDateFormatter)
+        val start = toEpochMillis(date.withDayOfMonth(1))
+        val end = toEpochMillis(date.withDayOfMonth(date.lengthOfMonth())) + (24 * 60 * 60 * 1000 - 1) // end of last day
         return Pair(start, end)
     }
 }

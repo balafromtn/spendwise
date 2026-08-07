@@ -18,7 +18,11 @@ object SheetRowCodec {
         val version = row[9].toString().toIntOrNull() ?: 1
         val deleted = row[10].toString().equals("TRUE", ignoreCase = true)
         val dateStr = row[1].toString()
-        val parsedDate = dateUtils.parseSheetDate(dateStr)
+        val parsedDate = dateUtils.parseSheetDate(dateStr) ?: run {
+            android.util.Log.w("SheetRowCodec", "Skipping row with unparseable date: $dateStr (UUID=$uuid)")
+            return null
+        }
+        val dateEpoch = dateUtils.toEpochMillis(parsedDate)
         return TransactionEntity(
             transactionId = uuid,
             date = dateStr,
@@ -30,6 +34,7 @@ object SheetRowCodec {
             notes = row[6].toString(),
             month = dateUtils.toMonthString(parsedDate),
             weekNo = dateUtils.toWeekNumber(parsedDate),
+            dateEpoch = dateEpoch,
             syncStatus = "SYNCED",
             createdAt = if (created > 0) created else System.currentTimeMillis(),
             updatedAt = updated,

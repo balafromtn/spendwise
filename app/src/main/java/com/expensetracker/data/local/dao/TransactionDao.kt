@@ -103,16 +103,16 @@ interface TransactionDao {
 
     @Query("""
         SELECT * FROM transactions 
-        WHERE (:startDate IS NULL OR date >= :startDate)
-        AND (:endDate IS NULL OR date <= :endDate)
+        WHERE (:startEpoch IS NULL OR dateEpoch >= :startEpoch)
+        AND (:endEpoch IS NULL OR dateEpoch <= :endEpoch)
         AND (:category IS NULL OR category = :category)
         AND (:paymentMethod IS NULL OR paymentMethod = :paymentMethod)
         AND deleted = 0
-        ORDER BY createdAt DESC
+        ORDER BY dateEpoch DESC
     """)
     fun getFiltered(
-        startDate: String?,
-        endDate: String?,
+        startEpoch: Long?,
+        endEpoch: Long?,
         category: String?,
         paymentMethod: String?
     ): Flow<List<TransactionEntity>>

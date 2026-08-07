@@ -96,12 +96,18 @@ class SheetsService(private val tokenProvider: TokenProvider) {
 
     suspend fun readBudgets(spreadsheetId: String): List<List<Any>> = withContext(Dispatchers.IO) {
         val service = getService() ?: return@withContext emptyList()
-        readRange(service, spreadsheetId, "${SheetsSchema.BUDGETS_SHEET}!A:H1000") ?: emptyList()
+        val rowCount = sheetRowCount(service, spreadsheetId, SheetsSchema.BUDGETS_SHEET)
+        val lastCol = columnLetter(SheetsSchema.BUDGETS_HEADERS.size)
+        if (rowCount <= 0) return@withContext emptyList()
+        readRange(service, spreadsheetId, "${SheetsSchema.BUDGETS_SHEET}!A1:$lastCol$rowCount") ?: emptyList()
     }
 
     suspend fun readCategories(spreadsheetId: String): List<List<Any>> = withContext(Dispatchers.IO) {
         val service = getService() ?: return@withContext emptyList()
-        readRange(service, spreadsheetId, "${SheetsSchema.CATEGORIES_SHEET}!A:D1000") ?: emptyList()
+        val rowCount = sheetRowCount(service, spreadsheetId, SheetsSchema.CATEGORIES_SHEET)
+        val lastCol = columnLetter(SheetsSchema.CATEGORIES_HEADERS.size)
+        if (rowCount <= 0) return@withContext emptyList()
+        readRange(service, spreadsheetId, "${SheetsSchema.CATEGORIES_SHEET}!A1:$lastCol$rowCount") ?: emptyList()
     }
 
     suspend fun readMetadata(spreadsheetId: String): Map<String, String> = withContext(Dispatchers.IO) {
@@ -148,6 +154,41 @@ class SheetsService(private val tokenProvider: TokenProvider) {
     ) = withContext(Dispatchers.IO) {
         val service = getService() ?: return@withContext
         updateRow(service, spreadsheetId, SheetsSchema.BUDGETS_SHEET, rowIndex, SheetsSchema.budgetRow(budget))
+    }
+
+    /**
+     * Batch-updates multiple rows in a single HTTP request.
+     * Each entry is (1-based rowIndex, row values).
+     * This avoids per-row rate limits on the Google Sheets API.
+     */
+    suspend fun batchUpdateRows(
+        spreadsheetId: String,
+        sheetName: String,
+        updates: List<Pair<Int, List<Any>>>
+    ) = withContext(Dispatchers.IO) {
+        val service = getService() ?: return@withContext
+        if (updates.isEmpty()) return@withContext
+
+        val colCount = when (sheetName) {
+            SheetsSchema.TRANSACTIONS_SHEET -> SheetsSchema.TRANSACTIONS_HEADERS.size
+            SheetsSchema.BUDGETS_SHEET -> SheetsSchema.BUDGETS_HEADERS.size
+            else -> updates.first().second.size
+        }
+        val lastCol = columnLetter(colCount)
+
+        val data = updates.map { (rowIndex, values) ->
+            ValueRange()
+                .setRange("$sheetName!A$rowIndex:$lastCol$rowIndex")
+                .setValues(listOf(values))
+        }
+
+        val batchBody = com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest()
+            .setValueInputOption("RAW")
+            .setData(data)
+
+        service.spreadsheets().values()
+            .batchUpdate(spreadsheetId, batchBody)
+            .execute()
     }
 
     /** Deletes specific 1-based row indices from the sheet efficiently. */
@@ -199,11 +240,12 @@ class SheetsService(private val tokenProvider: TokenProvider) {
         service.spreadsheets().values()
             .clear(spreadsheetId, "${SheetsSchema.METADATA_SHEET}!A1:${lastCol}100", ClearValuesRequest())
             .execute()
+        val rows = SheetsSchema.metadataRows(values)
         service.spreadsheets().values()
             .update(
                 spreadsheetId,
-                "${SheetsSchema.METADATA_SHEET}!A1:$lastCol${values.size + SheetsSchema.METADATA_HEADERS.size}",
-                ValueRange().setValues(SheetsSchema.metadataRows(values))
+                "${SheetsSchema.METADATA_SHEET}!A1:$lastCol${rows.size}",
+                ValueRange().setValues(rows)
             )
             .setValueInputOption("RAW")
             .execute()
